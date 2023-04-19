@@ -66,10 +66,10 @@ public class FilmController {
         return new ArrayList<>(filmMap.values());
     }
 
-   @DeleteMapping("/films")
+    @DeleteMapping("/films")
     public void clearFilmMap() {
         filmMap.clear();
         id = 0;
-       log.debug("Удаление всех фильмов");
+        log.debug("Удаление всех фильмов");
     }
 }
