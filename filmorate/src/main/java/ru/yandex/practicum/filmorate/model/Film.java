@@ -1,8 +1,5 @@
 package ru.yandex.practicum.filmorate.model;
 
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -11,8 +8,8 @@ import jakarta.validation.constraints.Size;
 import lombok.Builder;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import ru.yandex.practicum.filmorate.model.utils.DurationToSecondsSerialized;
 
-import java.io.IOException;
 import java.time.Duration;
 import java.time.LocalDate;
 
@@ -30,11 +27,4 @@ public class Film {
     private final LocalDate releaseDate;
     @JsonSerialize(using = DurationToSecondsSerialized.class)
     private final Duration duration;
-}
-
-class DurationToSecondsSerialized extends JsonSerializer<Duration> {
-    @Override
-    public void serialize(Duration duration, JsonGenerator jsonGenerator, SerializerProvider serializerProvider) throws IOException {
-        jsonGenerator.writeNumber(duration.getSeconds());
-    }
 }
