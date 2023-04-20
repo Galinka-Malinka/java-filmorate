@@ -1,4 +1,4 @@
-package ru.yandex.practicum.filmorate.model.Exceptions;
+package ru.yandex.practicum.filmorate.model.exception;
 
 public class ValidationException extends Throwable {
 
