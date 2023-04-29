@@ -1,75 +1,70 @@
 package ru.yandex.practicum.filmorate.controller;
 
-
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.User;
-import ru.yandex.practicum.filmorate.model.exception.ValidationException;
+import ru.yandex.practicum.filmorate.service.UserService;
 
 import javax.validation.Valid;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @Slf4j
+@RequestMapping("/users")
 public class UserController {
-    private Map<Integer, User> userMap = new HashMap<>();
-    private int id = 0;
 
-    @PostMapping("/users")
-    public ResponseEntity<?> addUser(@Valid @RequestBody User user) {  //добавление пользователя
-        try {
-            if (user.getLogin().contains(" ")) {
-                throw new ValidationException("В логине не должно быть пробелов");
-            }
-            if (user.getName() == null || user.getName().isBlank()) {
-                user.setName(user.getLogin());
-            }
-            user.setId(id + 1);
-            id++;
-            this.userMap.put(user.getId(), user);
-        } catch (ValidationException e) {
-            log.warn(e.getMessage());
-            return new ResponseEntity<>(user, HttpStatus.BAD_REQUEST);
-        }
-        log.debug("Добавление пользователя: {}", user);
-        return new ResponseEntity<>(user, HttpStatus.CREATED);
+    private final UserService userService;
+
+    @Autowired
+    public UserController(UserService userService) {
+        this.userService = userService;
     }
 
-    @PutMapping("/users")
-    public ResponseEntity<?> updateFilm(@Valid @RequestBody User user) {  //обновление пользователя
-        try {
-            if (user.getLogin().contains(" ")) {
-                throw new ValidationException("В логине не должно быть пробелов");
-            }
-            if (user.getName() == null || user.getName().isBlank()) {
-                user.setName(user.getLogin());
-            }
-            if (!userMap.containsKey(user.getId())) {
-                return new ResponseEntity<>(user, HttpStatus.NOT_FOUND);
-            }
-            this.userMap.replace(user.getId(), user);
-        } catch (ValidationException e) {
-            log.warn(e.getMessage());
-            return new ResponseEntity<>(user, HttpStatus.BAD_REQUEST);
-        }
-        log.debug("Обновление пользователя: {}", user);
-        return new ResponseEntity<>(user, HttpStatus.OK);
+    @PostMapping  //добавление пользователя
+    public ResponseEntity<?> addUser(@Valid @RequestBody User user) throws ValidationException {
+        return userService.addUser(user);
     }
 
-    @GetMapping("/users")
-    public List<User> getAllFilms() {  //получение всех пользователей
-        return new ArrayList<>(userMap.values());
+    @PutMapping  //обновление пользователя
+    public ResponseEntity<?> updateUser(@Valid @RequestBody User user) throws ValidationException {
+        return userService.updateUser(user);
     }
 
-    @DeleteMapping("/users")
+    @GetMapping  //получение всех пользователей
+    public List<User> getAllFilms() {
+        return userService.getAllFilms();
+    }
+
+    @DeleteMapping  //удаление всех пользователей
     public void clearUserMap() {
-        userMap.clear();
-        id = 0;
-        log.debug("Удаление всех пользователей");
+        userService.clearUserMap();
+    }
+
+    @GetMapping("/{id}")  //получение пользователя по id
+    public User getUserById(@PathVariable long id) {
+        return userService.getUserById(id);
+    }
+
+    @PutMapping("/{id}/friends/{friendId}")  //добавление в друзья
+    public User addFriend(@PathVariable long id, @PathVariable long friendId) {
+        return userService.addFriend(id, friendId);
+    }
+
+    @DeleteMapping("/{id}/friends/{friendId}")  //удаление друга
+    public ResponseEntity<?> deleteFriend(@PathVariable long id, @PathVariable long friendId) {
+        return userService.deleteFriend(id, friendId);
+    }
+
+    @GetMapping("/{id}/friends")  //получение списка друзей
+    public List<User> getFriends(@PathVariable long id) {
+        return userService.getFriends(id);
+    }
+
+    @GetMapping("/{id}/friends/common/{otherId}")  //получение списка общих друзей
+    public List<User> getListOfMutualFriends(@PathVariable("id") long user1Id, @PathVariable("otherId") long user2Id) {
+        return userService.getListOfMutualFriends(user1Id, user2Id);
     }
 }
