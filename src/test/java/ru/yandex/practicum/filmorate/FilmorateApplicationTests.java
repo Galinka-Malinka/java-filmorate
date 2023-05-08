@@ -75,6 +75,28 @@ class FilmorateApplicationTests {
     }
 
     @Test
+    void shouldGetFilmById() throws Exception {
+        Film film = Film.builder()
+                .name("Film")
+                .description("Film description")
+                .releaseDate(LocalDate.of(2023, 04, 16))
+                .duration(Duration.ofSeconds(120))
+                .build();
+
+        mockMvc.perform(post("http://localhost:8080/films")
+                .content(objectMapper.writeValueAsString(film))
+                .contentType(MediaType.APPLICATION_JSON));
+
+        mockMvc.perform(get("/films/1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value("1"))
+                .andExpect(jsonPath("$.name").value("Film"))
+                .andExpect(jsonPath("$.description").value("Film description"))
+                .andExpect(jsonPath("$.releaseDate").value("2023-04-16"))
+                .andExpect(jsonPath("$.duration").value(120));
+    }
+
+    @Test
     void shouldUpdateFilm() throws Exception {
         Film film = Film.builder()
                 .name("Film")
@@ -106,6 +128,7 @@ class FilmorateApplicationTests {
                 .andExpect(jsonPath("$.releaseDate").value("2021-04-16"))
                 .andExpect(jsonPath("$.duration").value(121));
     }
+
 
     @Test
     void shouldBeAnErrorIfNameOfFilmNull() throws Exception {
@@ -299,6 +322,30 @@ class FilmorateApplicationTests {
     }
 
     @Test
+    void shouldGetUserById() throws Exception {
+        User user = User.builder()
+                .login("UserLogin")
+                .name("User")
+                .email("User@email.ru")
+                .birthday(LocalDate.of(2000, 01, 16))
+                .build();
+
+        mockMvc.perform(post("http://localhost:8080/users")
+                .content(objectMapper.writeValueAsString(user))
+                .contentType(MediaType.APPLICATION_JSON));
+
+        user.setId(1);
+
+        mockMvc.perform(get("/users/1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value("1"))
+                .andExpect(jsonPath("$.login").value("UserLogin"))
+                .andExpect(jsonPath("$.name").value("User"))
+                .andExpect(jsonPath("$.email").value("User@email.ru"))
+                .andExpect(jsonPath("$.birthday").value("2000-01-16"));
+    }
+
+    @Test
     void shouldUpdateUser() throws Exception {
         User user = User.builder()
                 .login("UserLogin")
@@ -329,6 +376,207 @@ class FilmorateApplicationTests {
                 .andExpect(jsonPath("$.name").value("updateUser"))
                 .andExpect(jsonPath("$.email").value("UpdateUser@email.ru"))
                 .andExpect(jsonPath("$.birthday").value("2001-01-16"));
+    }
+
+    @Test
+    void shouldBeAdditionFriends() throws Exception {
+        User user1 = User.builder()
+                .login("UserLogin1")
+                .name("User1")
+                .email("User1@email.ru")
+                .birthday(LocalDate.of(2001, 01, 16))
+                .build();
+
+        mockMvc.perform(post("/users")
+                .content(objectMapper.writeValueAsString(user1))
+                .contentType(MediaType.APPLICATION_JSON));
+
+        User user2 = User.builder()
+                .login("UserLogin2")
+                .name("User2")
+                .email("User2@email.ru")
+                .birthday(LocalDate.of(2002, 01, 16))
+                .build();
+
+        mockMvc.perform(post("/users")
+                .content(objectMapper.writeValueAsString(user2))
+                .contentType(MediaType.APPLICATION_JSON));
+
+        mockMvc.perform(put("/users/1/friends/2")
+                        .content(objectMapper.writeValueAsString(user2))
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.friends").value(2));
+
+        mockMvc.perform(get("/users/2"))
+                .andExpect(jsonPath("$.friends").value(1));
+    }
+
+    @Test
+    void shouldBeDeleteFriends() throws Exception {
+        User user1 = User.builder()
+                .login("UserLogin1")
+                .name("User1")
+                .email("User1@email.ru")
+                .birthday(LocalDate.of(2001, 01, 16))
+                .build();
+
+        mockMvc.perform(post("/users")
+                .content(objectMapper.writeValueAsString(user1))
+                .contentType(MediaType.APPLICATION_JSON));
+
+        User user2 = User.builder()
+                .login("UserLogin2")
+                .name("User2")
+                .email("User2@email.ru")
+                .birthday(LocalDate.of(2002, 01, 16))
+                .build();
+
+        mockMvc.perform(post("/users")
+                .content(objectMapper.writeValueAsString(user2))
+                .contentType(MediaType.APPLICATION_JSON));
+
+        mockMvc.perform(put("/users/1/friends/2")
+                .content(objectMapper.writeValueAsString(user2))
+                .contentType(MediaType.APPLICATION_JSON));
+
+        mockMvc.perform(delete("/users/1/friends/2")
+                        .content(objectMapper.writeValueAsString(user2))
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.friends").isEmpty());
+
+        mockMvc.perform(get("/users/2"))
+                .andExpect(jsonPath("$.friends").isEmpty());
+    }
+
+    @Test
+    void shouldGetListOfFriends() throws Exception {
+        User user1 = User.builder()
+                .login("UserLogin1")
+                .name("User1")
+                .email("User1@email.ru")
+                .birthday(LocalDate.of(2001, 01, 16))
+                .build();
+
+        mockMvc.perform(post("/users")
+                .content(objectMapper.writeValueAsString(user1))
+                .contentType(MediaType.APPLICATION_JSON));
+
+        user1.setId(1);
+
+        User user2 = User.builder()
+                .login("UserLogin2")
+                .name("User2")
+                .email("User2@email.ru")
+                .birthday(LocalDate.of(2002, 01, 16))
+                .build();
+
+
+        mockMvc.perform(post("/users")
+                .content(objectMapper.writeValueAsString(user2))
+                .contentType(MediaType.APPLICATION_JSON));
+
+        user2.setId(2);
+
+        User user3 = User.builder()
+                .login("UserLogin3")
+                .name("User3")
+                .email("User3@email.ru")
+                .birthday(LocalDate.of(2003, 01, 16))
+                .build();
+
+        mockMvc.perform(post("/users")
+                .content(objectMapper.writeValueAsString(user3))
+                .contentType(MediaType.APPLICATION_JSON));
+
+        user3.setId(3);
+
+        mockMvc.perform(put("/users/1/friends/2")
+                .content(objectMapper.writeValueAsString(user2))
+                .contentType(MediaType.APPLICATION_JSON));
+
+        user2.addFriend(user1);
+        user1.addFriend(user2);
+
+        mockMvc.perform(put("/users/1/friends/3")
+                .content(objectMapper.writeValueAsString(user3))
+                .contentType(MediaType.APPLICATION_JSON));
+
+        user3.addFriend(user1);
+        user1.addFriend(user3);
+
+        mockMvc.perform(get("/users/1/friends"))
+                .andExpect(status().isOk())
+                .andExpect(content().json(objectMapper.writeValueAsString(Arrays.asList(user2, user3))));
+    }
+
+    @Test
+    void shouldGetListOfMutualFriends() throws Exception {
+        User user1 = User.builder()
+                .login("UserLogin1")
+                .name("User1")
+                .email("User1@email.ru")
+                .birthday(LocalDate.of(2001, 01, 16))
+                .build();
+
+        mockMvc.perform(post("/users")
+                .content(objectMapper.writeValueAsString(user1))
+                .contentType(MediaType.APPLICATION_JSON));
+
+        user1.setId(1);
+
+        User user2 = User.builder()
+                .login("UserLogin2")
+                .name("User2")
+                .email("User2@email.ru")
+                .birthday(LocalDate.of(2002, 01, 16))
+                .build();
+
+
+        mockMvc.perform(post("/users")
+                .content(objectMapper.writeValueAsString(user2))
+                .contentType(MediaType.APPLICATION_JSON));
+
+        user2.setId(2);
+
+        User user3 = User.builder()
+                .login("UserLogin3")
+                .name("User3")
+                .email("User3@email.ru")
+                .birthday(LocalDate.of(2003, 01, 16))
+                .build();
+
+        mockMvc.perform(post("/users")
+                .content(objectMapper.writeValueAsString(user3))
+                .contentType(MediaType.APPLICATION_JSON));
+
+        user3.setId(3);
+
+        mockMvc.perform(put("/users/1/friends/2")
+                .content(objectMapper.writeValueAsString(user2))
+                .contentType(MediaType.APPLICATION_JSON));
+
+        user2.addFriend(user1);
+        user1.addFriend(user2);
+
+        mockMvc.perform(put("/users/1/friends/3")
+                .content(objectMapper.writeValueAsString(user3))
+                .contentType(MediaType.APPLICATION_JSON));
+
+        user3.addFriend(user1);
+        user1.addFriend(user3);
+
+        mockMvc.perform(put("/users/2/friends/3")
+                .content(objectMapper.writeValueAsString(user3))
+                .contentType(MediaType.APPLICATION_JSON));
+
+        user3.addFriend(user2);
+        user2.addFriend(user3);
+
+        mockMvc.perform(get("/users/1/friends/common/2"))
+                .andExpect(status().isOk())
+                .andExpect(content().json(objectMapper.writeValueAsString(Arrays.asList(user3))));
     }
 
     @Test
@@ -461,5 +709,203 @@ class FilmorateApplicationTests {
                                 .content(objectMapper.writeValueAsString(updateUser))
                                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void shouldBeAdditionLike() throws Exception {
+        User user = User.builder()
+                .login("UserLogin")
+                .name("User")
+                .email("User@email.ru")
+                .birthday(LocalDate.of(2000, 01, 16))
+                .build();
+
+        mockMvc.perform(post("/users")
+                .content(objectMapper.writeValueAsString(user))
+                .contentType(MediaType.APPLICATION_JSON));
+
+        Film film = Film.builder()
+                .name("Film")
+                .description("Film description")
+                .releaseDate(LocalDate.of(2023, 04, 16))
+                .duration(Duration.ofSeconds(120))
+                .build();
+
+        mockMvc.perform(post("/films")
+                .content(objectMapper.writeValueAsString(film))
+                .contentType(MediaType.APPLICATION_JSON));
+
+        mockMvc.perform(put("/films/1/like/1")
+                        .content(objectMapper.writeValueAsString(film))
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value("1"))
+                .andExpect(jsonPath("$.name").value("Film"))
+                .andExpect(jsonPath("$.description").value("Film description"))
+                .andExpect(jsonPath("$.releaseDate").value("2023-04-16"))
+                .andExpect(jsonPath("$.duration").value(120))
+                .andExpect(jsonPath("$.likes").value(1));
+    }
+
+    @Test
+    void shouldBeDeleteLike() throws Exception {
+        User user = User.builder()
+                .login("UserLogin")
+                .name("User")
+                .email("User@email.ru")
+                .birthday(LocalDate.of(2000, 01, 16))
+                .build();
+
+        mockMvc.perform(post("/users")
+                .content(objectMapper.writeValueAsString(user))
+                .contentType(MediaType.APPLICATION_JSON));
+
+        Film film = Film.builder()
+                .name("Film")
+                .description("Film description")
+                .releaseDate(LocalDate.of(2023, 04, 16))
+                .duration(Duration.ofSeconds(120))
+                .build();
+
+        mockMvc.perform(post("/films")
+                .content(objectMapper.writeValueAsString(film))
+                .contentType(MediaType.APPLICATION_JSON));
+
+        film.setId(1);
+
+        mockMvc.perform(put("/films/1/like/1")
+                .content(objectMapper.writeValueAsString(film))
+                .contentType(MediaType.APPLICATION_JSON));
+
+        mockMvc.perform(delete("/films/1/like/1")
+                        .content(objectMapper.writeValueAsString(film))
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(content().json(objectMapper.writeValueAsString(film)));
+    }
+
+    @Test
+    void shouldBeGetPopularFilms() throws Exception {
+        User user1 = User.builder()
+                .login("UserLogin1")
+                .name("User1")
+                .email("User1@email.ru")
+                .birthday(LocalDate.of(2001, 01, 16))
+                .build();
+
+        mockMvc.perform(post("/users")
+                .content(objectMapper.writeValueAsString(user1))
+                .contentType(MediaType.APPLICATION_JSON));
+
+        User user2 = User.builder()
+                .login("UserLogin2")
+                .name("User2")
+                .email("User2@email.ru")
+                .birthday(LocalDate.of(2002, 01, 16))
+                .build();
+
+        mockMvc.perform(post("/users")
+                .content(objectMapper.writeValueAsString(user2))
+                .contentType(MediaType.APPLICATION_JSON));
+
+        User user3 = User.builder()
+                .login("UserLogin3")
+                .name("User3")
+                .email("User3@email.ru")
+                .birthday(LocalDate.of(2003, 01, 16))
+                .build();
+
+        mockMvc.perform(post("/users")
+                .content(objectMapper.writeValueAsString(user3))
+                .contentType(MediaType.APPLICATION_JSON));
+
+        Film film1 = Film.builder()
+                .name("Film1")
+                .description("Film1 description")
+                .releaseDate(LocalDate.of(2021, 04, 16))
+                .duration(Duration.ofSeconds(120))
+                .build();
+
+        mockMvc.perform(post("/films")
+                .content(objectMapper.writeValueAsString(film1))
+                .contentType(MediaType.APPLICATION_JSON));
+
+        film1.setId(1);
+
+        Film film2 = Film.builder()
+                .name("Film2")
+                .description("Film2 description")
+                .releaseDate(LocalDate.of(2022, 04, 16))
+                .duration(Duration.ofSeconds(120))
+                .build();
+
+        mockMvc.perform(post("/films")
+                .content(objectMapper.writeValueAsString(film2))
+                .contentType(MediaType.APPLICATION_JSON));
+
+        film2.setId(2);
+
+        Film film3 = Film.builder()
+                .name("Film3")
+                .description("Film3 description")
+                .releaseDate(LocalDate.of(2023, 04, 16))
+                .duration(Duration.ofSeconds(120))
+                .build();
+
+        mockMvc.perform(post("/films")
+                .content(objectMapper.writeValueAsString(film3))
+                .contentType(MediaType.APPLICATION_JSON));
+
+        film3.setId(3);
+
+        mockMvc.perform(put("/films/1/like/1")
+                .content(objectMapper.writeValueAsString(film1))
+                .contentType(MediaType.APPLICATION_JSON));
+
+        film1.addLike(1);
+
+        mockMvc.perform(put("/films/2/like/1")
+                .content(objectMapper.writeValueAsString(film2))
+                .contentType(MediaType.APPLICATION_JSON));
+
+        film2.addLike(1);
+
+        mockMvc.perform(put("/films/2/like/2")
+                .content(objectMapper.writeValueAsString(film2))
+                .contentType(MediaType.APPLICATION_JSON));
+
+        film2.addLike(2);
+
+        mockMvc.perform(put("/films/2/like/3")
+                .content(objectMapper.writeValueAsString(film2))
+                .contentType(MediaType.APPLICATION_JSON));
+
+        film2.addLike(3);
+
+        mockMvc.perform(put("/films/3/like/2")
+                .content(objectMapper.writeValueAsString(film3))
+                .contentType(MediaType.APPLICATION_JSON));
+
+        film3.addLike(2);
+
+        mockMvc.perform(put("/films/3/like/3")
+                .content(objectMapper.writeValueAsString(film3))
+                .contentType(MediaType.APPLICATION_JSON));
+
+        film3.addLike(3);
+
+        mockMvc.perform(get("/films/popular"))
+                .andExpect(status().isOk())
+                .andExpect(content().json(objectMapper.writeValueAsString(Arrays.asList(film2, film3, film1))));
+
+        mockMvc.perform(delete("/films/1/like/1")
+                .content(objectMapper.writeValueAsString(film1))
+                .contentType(MediaType.APPLICATION_JSON));
+
+        film1.deleteLike(1);
+
+        mockMvc.perform(get("/films/popular"))
+                .andExpect(status().isOk())
+                .andExpect(content().json(objectMapper.writeValueAsString(Arrays.asList(film2, film3, film1))));
     }
 }
