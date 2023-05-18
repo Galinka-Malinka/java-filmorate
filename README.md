@@ -1,7 +1,7 @@
 # java-filmorate
 ## База данных
 ### Схема
-![Схема БД](https://github.com/Galinka-Malinka/java-filmorate/blob/Datebase/filmorateBD3.svg)
+![Схема БД](https://github.com/Galinka-Malinka/java-filmorate/blob/Datebase/filmorateBD7.svg)
 
 ### Описание в текстовом формате
 
