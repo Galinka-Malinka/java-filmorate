@@ -296,7 +296,7 @@ public class FilmorateApplicationIntegrationTest {
     }
 
     @Test
-    public void TestGetRatingOfFilms() throws ValidationException {
+    public void testGetRatingOfFilms() throws ValidationException {
         createUser();
         createSecondUser();
         createThirdUser();
