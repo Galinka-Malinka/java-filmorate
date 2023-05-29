@@ -62,13 +62,13 @@ public class FilmDbStorage implements FilmStorage {
             stmt.setInt(5, film.getMpa().getId());
             return stmt;
         }, keyHolder);
-        long film_id = keyHolder.getKey().longValue();
+        long filmId = keyHolder.getKey().longValue();
 
-        film.setId(film_id);
+        film.setId(filmId);
 
         for (Genre genre : film.getGenres()) { // добавление информации о жанрах фильма в таблицу genre_of_film
             String sqlQuery = "insert into genre_of_film (film_id, genre_id) values(?, ?)";
-            jdbcTemplate.update(sqlQuery, film_id, genre.getId());
+            jdbcTemplate.update(sqlQuery, filmId, genre.getId());
 
             String sqlForGenre = "select genre_id, name from genre where genre_id = ?";
             Genre newGenre = jdbcTemplate.queryForObject(sqlForGenre, this::mapRowToGenre, genre.getId());
@@ -104,15 +104,14 @@ public class FilmDbStorage implements FilmStorage {
                 "film_id = ?, name = ?, description = ?, release_date = ?, duration = ?, rating_id = ? " +
                 "where film_id = ?";
 
-        jdbcTemplate.update(sql
-                , film.getId()
-                , film.getName()
-                , film.getDescription()
-                , film.getReleaseDate()
-                , film.getDuration()
-                , film.getMpa().getId()
-                , film.getId()
-        );
+        jdbcTemplate.update(sql,
+                film.getId(),
+                film.getName(),
+                film.getDescription(),
+                film.getReleaseDate(),
+                film.getDuration(),
+                film.getMpa().getId(),
+                film.getId());
 
         String sqlForDeleteAllGenres = "delete from genre_of_film where film_id = ?";
         jdbcTemplate.update(sqlForDeleteAllGenres, film.getId());
