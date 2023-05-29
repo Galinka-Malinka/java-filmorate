@@ -46,8 +46,8 @@ public class UserDbStorage implements UserStorage {
             stmt.setDate(4, Date.valueOf(user.getBirthday()));
             return stmt;
         }, keyHolder);
-        long user_id = keyHolder.getKey().longValue();
-        user.setId(user_id);
+        long userId = keyHolder.getKey().longValue();
+        user.setId(userId);
 
         log.debug("Добавление пользователя: {}", user.getLogin());
         return new ResponseEntity<>(user, HttpStatus.CREATED);
@@ -66,14 +66,13 @@ public class UserDbStorage implements UserStorage {
                 "user_id = ?, login = ?, name = ?, email = ?, birthday = ? " +
                 "where user_id = ?";
 
-        jdbcTemplate.update(sql
-                , user.getId()
-                , user.getLogin()
-                , user.getName()
-                , user.getEmail()
-                , user.getBirthday()
-                , user.getId()
-        );
+        jdbcTemplate.update(sql,
+                user.getId(),
+                user.getLogin(),
+                user.getName(),
+                user.getEmail(),
+                user.getBirthday(),
+                user.getId());
 
         log.debug("Обновление пользователя: {}", user.getLogin());
         return new ResponseEntity<>(user, HttpStatus.OK);
