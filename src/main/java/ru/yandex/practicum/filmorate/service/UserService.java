@@ -6,7 +6,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.User;
-import ru.yandex.practicum.filmorate.storage.user.InMemoryUserStorage;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
 import java.util.List;
@@ -17,11 +16,9 @@ public class UserService {
     @Qualifier("userDbStorage")
     private final UserStorage storage;
 
-
-    public UserService(InMemoryUserStorage storage) {
+    public UserService(UserStorage storage) {
         this.storage = storage;
     }
-
 
     public User addFriend(long user1Id, long user2Id) {  //добавление в друзья
         return storage.addFriend(user1Id, user2Id);

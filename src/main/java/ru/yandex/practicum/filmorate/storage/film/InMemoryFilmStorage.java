@@ -20,7 +20,6 @@ import java.util.stream.Collectors;
 @Component
 @Primary
 public class InMemoryFilmStorage implements FilmStorage {  //добавление фильма
-
     private final Map<Long, Film> filmMap = new HashMap<>();
     private int id = 0;
 

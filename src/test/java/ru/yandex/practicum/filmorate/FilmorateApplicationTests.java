@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.web.servlet.MockMvc;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.RatingMPA;
@@ -24,6 +25,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest
 @AutoConfigureMockMvc
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class FilmorateApplicationTests {
 
     @Autowired
@@ -41,13 +43,13 @@ class FilmorateApplicationTests {
     void shouldCreateFilm() throws Exception {
 
         Film film = Film.builder()
+                .id(1L)
                 .name("Film")
                 .description("Film description")
                 .releaseDate(LocalDate.of(2023, 04, 16))
                 .duration(Duration.ofSeconds(120))
                 .mpa(RatingMPA.builder().id(1).name("G").build())
                 .build();
-        System.out.println(film);
 
         mockMvc.perform(post("/films")
                         .content(objectMapper.writeValueAsString(film))
@@ -63,6 +65,7 @@ class FilmorateApplicationTests {
     @Test
     void shouldGetFilm() throws Exception {
         Film film = Film.builder()
+                .id(1L)
                 .name("Film")
                 .description("Film description")
                 .releaseDate(LocalDate.of(2023, 04, 16))
@@ -84,6 +87,7 @@ class FilmorateApplicationTests {
     @Test
     void shouldGetFilmById() throws Exception {
         Film film = Film.builder()
+                .id(1L)
                 .name("Film")
                 .description("Film description")
                 .releaseDate(LocalDate.of(2023, 04, 16))
@@ -138,7 +142,6 @@ class FilmorateApplicationTests {
                 .andExpect(jsonPath("$.releaseDate").value("2021-04-16"))
                 .andExpect(jsonPath("$.duration").value(121));
     }
-
 
     @Test
     void shouldBeAnErrorIfNameOfFilmNull() throws Exception {
@@ -283,6 +286,7 @@ class FilmorateApplicationTests {
         java.util.Map<Long, String> friendMap = new HashMap<>();
         friendMap.put(2L, "newUser");
         User user = User.builder()
+                .id(1L)
                 .login("UserLogin")
                 .name("User")
                 .email("User@email.ru")
@@ -321,6 +325,7 @@ class FilmorateApplicationTests {
     @Test
     void shouldGetUser() throws Exception {
         User user = User.builder()
+                .id(1L)
                 .login("UserLogin")
                 .name("User")
                 .email("User@email.ru")
@@ -371,6 +376,7 @@ class FilmorateApplicationTests {
     @Test
     void shouldUpdateUser() throws Exception {
         User user = User.builder()
+                .id(1L)
                 .login("UserLogin")
                 .name("User")
                 .email("User@email.ru")
@@ -404,6 +410,7 @@ class FilmorateApplicationTests {
     @Test
     void shouldBeAdditionFriends() throws Exception {
         User user1 = User.builder()
+                .id(1L)
                 .login("UserLogin1")
                 .name("User1")
                 .email("User1@email.ru")
@@ -415,6 +422,7 @@ class FilmorateApplicationTests {
                 .contentType(MediaType.APPLICATION_JSON));
 
         User user2 = User.builder()
+                .id(2L)
                 .login("UserLogin2")
                 .name("User2")
                 .email("User2@email.ru")
@@ -439,6 +447,7 @@ class FilmorateApplicationTests {
     @Test
     void shouldBeDeleteFriends() throws Exception {
         User user1 = User.builder()
+                .id(1L)
                 .login("UserLogin1")
                 .name("User1")
                 .email("User1@email.ru")
@@ -450,6 +459,7 @@ class FilmorateApplicationTests {
                 .contentType(MediaType.APPLICATION_JSON));
 
         User user2 = User.builder()
+                .id(2L)
                 .login("UserLogin2")
                 .name("User2")
                 .email("User2@email.ru")
@@ -477,6 +487,7 @@ class FilmorateApplicationTests {
     @Test
     void shouldGetListOfFriends() throws Exception {
         User user1 = User.builder()
+                .id(1L)
                 .login("UserLogin1")
                 .name("User1")
                 .email("User1@email.ru")
@@ -487,23 +498,20 @@ class FilmorateApplicationTests {
                 .content(objectMapper.writeValueAsString(user1))
                 .contentType(MediaType.APPLICATION_JSON));
 
-        user1.setId(1);
-
         User user2 = User.builder()
+                .id(2L)
                 .login("UserLogin2")
                 .name("User2")
                 .email("User2@email.ru")
                 .birthday(LocalDate.of(2002, 01, 16))
                 .build();
 
-
         mockMvc.perform(post("/users")
                 .content(objectMapper.writeValueAsString(user2))
                 .contentType(MediaType.APPLICATION_JSON));
 
-        user2.setId(2);
-
         User user3 = User.builder()
+                .id(3L)
                 .login("UserLogin3")
                 .name("User3")
                 .email("User3@email.ru")
@@ -514,20 +522,16 @@ class FilmorateApplicationTests {
                 .content(objectMapper.writeValueAsString(user3))
                 .contentType(MediaType.APPLICATION_JSON));
 
-        user3.setId(3);
-
         mockMvc.perform(put("/users/1/friends/2")
                 .content(objectMapper.writeValueAsString(user2))
                 .contentType(MediaType.APPLICATION_JSON));
 
-//        user2.addFriend(user1);
         user1.addFriend(user2);
 
         mockMvc.perform(put("/users/1/friends/3")
                 .content(objectMapper.writeValueAsString(user3))
                 .contentType(MediaType.APPLICATION_JSON));
 
-//        user3.addFriend(user1);
         user1.addFriend(user3);
 
         mockMvc.perform(get("/users/1/friends"))
@@ -538,6 +542,7 @@ class FilmorateApplicationTests {
     @Test
     void shouldGetListOfMutualFriends() throws Exception {
         User user1 = User.builder()
+                .id(1L)
                 .login("UserLogin1")
                 .name("User1")
                 .email("User1@email.ru")
@@ -548,23 +553,20 @@ class FilmorateApplicationTests {
                 .content(objectMapper.writeValueAsString(user1))
                 .contentType(MediaType.APPLICATION_JSON));
 
-        user1.setId(1);
-
         User user2 = User.builder()
+                .id(2L)
                 .login("UserLogin2")
                 .name("User2")
                 .email("User2@email.ru")
                 .birthday(LocalDate.of(2002, 01, 16))
                 .build();
 
-
         mockMvc.perform(post("/users")
                 .content(objectMapper.writeValueAsString(user2))
                 .contentType(MediaType.APPLICATION_JSON));
 
-        user2.setId(2);
-
         User user3 = User.builder()
+                .id(3L)
                 .login("UserLogin3")
                 .name("User3")
                 .email("User3@email.ru")
@@ -575,27 +577,22 @@ class FilmorateApplicationTests {
                 .content(objectMapper.writeValueAsString(user3))
                 .contentType(MediaType.APPLICATION_JSON));
 
-        user3.setId(3);
-
         mockMvc.perform(put("/users/1/friends/2")
                 .content(objectMapper.writeValueAsString(user2))
                 .contentType(MediaType.APPLICATION_JSON));
 
-//        user2.addFriend(user1);
         user1.addFriend(user2);
 
         mockMvc.perform(put("/users/1/friends/3")
                 .content(objectMapper.writeValueAsString(user3))
                 .contentType(MediaType.APPLICATION_JSON));
 
-//        user3.addFriend(user1);
         user1.addFriend(user3);
 
         mockMvc.perform(put("/users/2/friends/3")
                 .content(objectMapper.writeValueAsString(user3))
                 .contentType(MediaType.APPLICATION_JSON));
 
-//        user3.addFriend(user2);
         user2.addFriend(user3);
 
         mockMvc.perform(get("/users/1/friends/common/2"))

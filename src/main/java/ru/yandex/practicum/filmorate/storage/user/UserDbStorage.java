@@ -32,6 +32,9 @@ public class UserDbStorage implements UserStorage {
 
     @Override  //добавление пользователя
     public ResponseEntity<?> addUser(User user) throws ValidationException {
+        if (user.getLogin().contains(" ")) {
+            throw new ValidationException("В логине не должно быть пробелов");
+        }
         if (user.getName() == null || user.getName().isBlank()) {
             user.setName(user.getLogin());
         }

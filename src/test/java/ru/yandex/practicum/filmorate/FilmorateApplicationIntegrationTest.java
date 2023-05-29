@@ -30,7 +30,7 @@ public class FilmorateApplicationIntegrationTest {
     private void createUser() throws ValidationException {
         User user = User.builder()
                 .id(1)
-                .login("Test login user")
+                .login("TestLoginUser")
                 .name("Test name user")
                 .email("TestEmailUser@mail.ru")
                 .birthday(LocalDate.ofEpochDay(2000 - 10 - 11))
@@ -41,7 +41,7 @@ public class FilmorateApplicationIntegrationTest {
     private void createSecondUser() throws ValidationException {
         User user = User.builder()
                 .id(2)
-                .login("Test login user2")
+                .login("TestLoginUser2")
                 .name("Test name user2")
                 .email("TestEmailUser2@mail.ru")
                 .birthday(LocalDate.ofEpochDay(2002 - 12 - 12))
@@ -52,7 +52,7 @@ public class FilmorateApplicationIntegrationTest {
     private void createThirdUser() throws ValidationException {
         User user = User.builder()
                 .id(3)
-                .login("Test login user3")
+                .login("TestLoginUser3")
                 .name("Test name user3")
                 .email("TestEmailUser3@mail.ru")
                 .birthday(LocalDate.ofEpochDay(2003 - 12 - 13))
@@ -68,7 +68,7 @@ public class FilmorateApplicationIntegrationTest {
 
         assertThat(user != null);
         assertThat(user.getId() == 1L);
-        assertThat(user.getLogin().equals("Test login user"));
+        assertThat(user.getLogin().equals("TestLoginUser"));
         assertThat(user.getName().equals("Test name user"));
         assertThat(user.getEmail().equals("TestEmailUser@mail.ru"));
         assertThat(user.getBirthday().equals(LocalDate.ofEpochDay(2000 - 10 - 11)));
@@ -80,7 +80,7 @@ public class FilmorateApplicationIntegrationTest {
 
         User user = User.builder()
                 .id(1)
-                .login("Test update login user")
+                .login("TestUpdateLoginUser")
                 .name("Test update name user")
                 .email("TestUpdateEmailUser@mail.ru")
                 .birthday(LocalDate.ofEpochDay(2001 - 11 - 11))
@@ -91,7 +91,7 @@ public class FilmorateApplicationIntegrationTest {
 
         assertThat(updatedUser != null);
         assertThat(updatedUser.getId() == 1L);
-        assertThat(updatedUser.getLogin().equals("Test update login user"));
+        assertThat(updatedUser.getLogin().equals("TestUpdateLoginUser"));
         assertThat(updatedUser.getName().equals("Test update name user"));
         assertThat(updatedUser.getEmail().equals("TestUpdateEmailUser@mail.ru"));
         assertThat(updatedUser.getBirthday().equals(LocalDate.ofEpochDay(2001 - 11 - 11)));
@@ -107,12 +107,12 @@ public class FilmorateApplicationIntegrationTest {
         assertThat(!userList.isEmpty());
         assertThat(userList.size() == 2);
         assertThat(userList.get(0).getId() == 1L);
-        assertThat(userList.get(0).getLogin().equals("Test login user"));
+        assertThat(userList.get(0).getLogin().equals("TestLoginUser"));
         assertThat(userList.get(0).getName().equals("Test name user"));
         assertThat(userList.get(0).getEmail().equals("TestEmailUser@mail.ru"));
         assertThat(userList.get(0).getBirthday().equals(LocalDate.ofEpochDay(2000 - 10 - 11)));
         assertThat(userList.get(1).getId() == 2L);
-        assertThat(userList.get(1).getLogin().equals("Test login user2"));
+        assertThat(userList.get(1).getLogin().equals("TestLoginUser2"));
         assertThat(userList.get(1).getName().equals("Test name user2"));
         assertThat(userList.get(1).getEmail().equals("TestEmailUser2@mail.ru"));
         assertThat(userList.get(1).getBirthday().equals(LocalDate.ofEpochDay(2002 - 12 - 12)));
