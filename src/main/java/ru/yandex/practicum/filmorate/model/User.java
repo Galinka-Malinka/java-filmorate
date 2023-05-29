@@ -47,8 +47,8 @@ public class User {
         return mapFriends.containsKey(friendId);
     }
 
-    public void setStatusFriendship(Long friend_id, String status) {
-        this.mapFriends.replace(friend_id, status);
+    public void setStatusFriendship(Long friendId, String status) {
+        this.mapFriends.replace(friendId, status);
     }
 
     public void deleteFriend(User user) {
