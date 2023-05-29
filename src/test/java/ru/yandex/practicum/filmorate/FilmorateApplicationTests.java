@@ -9,11 +9,15 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.model.RatingMPA;
 import ru.yandex.practicum.filmorate.model.User;
 
 import java.time.Duration;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -41,7 +45,9 @@ class FilmorateApplicationTests {
                 .description("Film description")
                 .releaseDate(LocalDate.of(2023, 04, 16))
                 .duration(Duration.ofSeconds(120))
+                .mpa(RatingMPA.builder().id(1).name("G").build())
                 .build();
+        System.out.println(film);
 
         mockMvc.perform(post("/films")
                         .content(objectMapper.writeValueAsString(film))
@@ -61,6 +67,7 @@ class FilmorateApplicationTests {
                 .description("Film description")
                 .releaseDate(LocalDate.of(2023, 04, 16))
                 .duration(Duration.ofSeconds(120))
+                .mpa(RatingMPA.builder().id(1).name("G").build())
                 .build();
 
         mockMvc.perform(post("http://localhost:8080/films")
@@ -81,6 +88,7 @@ class FilmorateApplicationTests {
                 .description("Film description")
                 .releaseDate(LocalDate.of(2023, 04, 16))
                 .duration(Duration.ofSeconds(120))
+                .mpa(RatingMPA.builder().id(1).name("G").build())
                 .build();
 
         mockMvc.perform(post("http://localhost:8080/films")
@@ -103,6 +111,7 @@ class FilmorateApplicationTests {
                 .description("Film description")
                 .releaseDate(LocalDate.of(2023, 04, 16))
                 .duration(Duration.ofSeconds(120))
+                .mpa(RatingMPA.builder().id(1).name("G").build())
                 .build();
 
         mockMvc.perform(post("http://localhost:8080/films")
@@ -115,6 +124,7 @@ class FilmorateApplicationTests {
                 .description("updateFilm description")
                 .releaseDate(LocalDate.of(2021, 04, 16))
                 .duration(Duration.ofSeconds(121))
+                .mpa(RatingMPA.builder().id(2).name("PG").build())
                 .build();
 
         mockMvc.perform(
@@ -136,6 +146,7 @@ class FilmorateApplicationTests {
                 .description("Film description")
                 .releaseDate(LocalDate.of(2023, 04, 16))
                 .duration(Duration.ofSeconds(120))
+                .mpa(RatingMPA.builder().id(1).name("G").build())
                 .build();
 
         mockMvc.perform(post("http://localhost:8080/films")  //Проверка создания фильма
@@ -151,6 +162,7 @@ class FilmorateApplicationTests {
                 .description("Film description")
                 .releaseDate(LocalDate.of(2023, 04, 16))
                 .duration(Duration.ofSeconds(120))
+                .mpa(RatingMPA.builder().id(1).name("G").build())
                 .build();
 
         mockMvc.perform(post("http://localhost:8080/films")
@@ -168,6 +180,7 @@ class FilmorateApplicationTests {
                         "1234567890123456789012345678901")
                 .releaseDate(LocalDate.of(2023, 04, 16))
                 .duration(Duration.ofSeconds(120))
+                .mpa(RatingMPA.builder().id(1).name("G").build())
                 .build();
 
         mockMvc.perform(post("http://localhost:8080/films")
@@ -183,6 +196,7 @@ class FilmorateApplicationTests {
                 .description("Film description")
                 .releaseDate(LocalDate.of(2033, 04, 16))
                 .duration(Duration.ofSeconds(120))
+                .mpa(RatingMPA.builder().id(1).name("G").build())
                 .build();
 
         mockMvc.perform(post("http://localhost:8080/films")
@@ -198,6 +212,7 @@ class FilmorateApplicationTests {
                 .description("Film description")
                 .releaseDate(LocalDate.of(1880, 04, 16))
                 .duration(Duration.ofSeconds(120))
+                .mpa(RatingMPA.builder().id(1).name("G").build())
                 .build();
 
         mockMvc.perform(post("http://localhost:8080/films")
@@ -213,6 +228,7 @@ class FilmorateApplicationTests {
                 .description("Film description")
                 .releaseDate(LocalDate.of(2023, 04, 16))
                 .duration(Duration.ofSeconds(-120))
+                .mpa(RatingMPA.builder().id(1).name("G").build())
                 .build();
 
         mockMvc.perform(post("http://localhost:8080/films")
@@ -223,10 +239,10 @@ class FilmorateApplicationTests {
 
     @Test
     void shouldBeAnErrorIfBodyRequestIsEmpty() throws Exception {
-        Film film = Film.builder().build();
 
+        String invalidFileJSON = "{}";
         mockMvc.perform(post("http://localhost:8080/films")
-                        .content(objectMapper.writeValueAsString(film))
+                        .content(invalidFileJSON)
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest());
     }
@@ -239,6 +255,7 @@ class FilmorateApplicationTests {
                 .description("Film description")
                 .releaseDate(LocalDate.of(2023, 04, 16))
                 .duration(Duration.ofSeconds(120))
+                .mpa(RatingMPA.builder().id(1).name("G").build())
                 .build();
 
         mockMvc.perform(post("http://localhost:8080/films")
@@ -251,6 +268,7 @@ class FilmorateApplicationTests {
                 .description("updateFilm description")
                 .releaseDate(LocalDate.of(2021, 04, 16))
                 .duration(Duration.ofSeconds(121))
+                .mpa(RatingMPA.builder().id(2).name("PG").build())
                 .build();
 
         mockMvc.perform(
@@ -262,12 +280,17 @@ class FilmorateApplicationTests {
 
     @Test
     void shouldCreateUser() throws Exception {
+        java.util.Map<Long, String> friendMap = new HashMap<>();
+        friendMap.put(2L, "newUser");
         User user = User.builder()
                 .login("UserLogin")
                 .name("User")
                 .email("User@email.ru")
                 .birthday(LocalDate.of(2000, 01, 16))
                 .build();
+
+        user.getMapFriends().put(2L, "newUser");
+
 
         mockMvc.perform(post("http://localhost:8080/users")
                         .content(objectMapper.writeValueAsString(user))
@@ -407,9 +430,10 @@ class FilmorateApplicationTests {
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.friends").value(2));
+        List<Long> longList = new ArrayList<>();
 
         mockMvc.perform(get("/users/2"))
-                .andExpect(jsonPath("$.friends").value(1));
+                .andExpect(jsonPath("$.friends").value(longList));
     }
 
     @Test
@@ -496,14 +520,14 @@ class FilmorateApplicationTests {
                 .content(objectMapper.writeValueAsString(user2))
                 .contentType(MediaType.APPLICATION_JSON));
 
-        user2.addFriend(user1);
+//        user2.addFriend(user1);
         user1.addFriend(user2);
 
         mockMvc.perform(put("/users/1/friends/3")
                 .content(objectMapper.writeValueAsString(user3))
                 .contentType(MediaType.APPLICATION_JSON));
 
-        user3.addFriend(user1);
+//        user3.addFriend(user1);
         user1.addFriend(user3);
 
         mockMvc.perform(get("/users/1/friends"))
@@ -557,21 +581,21 @@ class FilmorateApplicationTests {
                 .content(objectMapper.writeValueAsString(user2))
                 .contentType(MediaType.APPLICATION_JSON));
 
-        user2.addFriend(user1);
+//        user2.addFriend(user1);
         user1.addFriend(user2);
 
         mockMvc.perform(put("/users/1/friends/3")
                 .content(objectMapper.writeValueAsString(user3))
                 .contentType(MediaType.APPLICATION_JSON));
 
-        user3.addFriend(user1);
+//        user3.addFriend(user1);
         user1.addFriend(user3);
 
         mockMvc.perform(put("/users/2/friends/3")
                 .content(objectMapper.writeValueAsString(user3))
                 .contentType(MediaType.APPLICATION_JSON));
 
-        user3.addFriend(user2);
+//        user3.addFriend(user2);
         user2.addFriend(user3);
 
         mockMvc.perform(get("/users/1/friends/common/2"))
@@ -729,6 +753,7 @@ class FilmorateApplicationTests {
                 .description("Film description")
                 .releaseDate(LocalDate.of(2023, 04, 16))
                 .duration(Duration.ofSeconds(120))
+                .mpa(RatingMPA.builder().id(1).name("G").build())
                 .build();
 
         mockMvc.perform(post("/films")
@@ -765,6 +790,7 @@ class FilmorateApplicationTests {
                 .description("Film description")
                 .releaseDate(LocalDate.of(2023, 04, 16))
                 .duration(Duration.ofSeconds(120))
+                .mpa(RatingMPA.builder().id(1).name("G").build())
                 .build();
 
         mockMvc.perform(post("/films")
@@ -824,6 +850,7 @@ class FilmorateApplicationTests {
                 .description("Film1 description")
                 .releaseDate(LocalDate.of(2021, 04, 16))
                 .duration(Duration.ofSeconds(120))
+                .mpa(RatingMPA.builder().id(1).name("G").build())
                 .build();
 
         mockMvc.perform(post("/films")
@@ -837,6 +864,7 @@ class FilmorateApplicationTests {
                 .description("Film2 description")
                 .releaseDate(LocalDate.of(2022, 04, 16))
                 .duration(Duration.ofSeconds(120))
+                .mpa(RatingMPA.builder().id(2).name("PG").build())
                 .build();
 
         mockMvc.perform(post("/films")
@@ -850,6 +878,7 @@ class FilmorateApplicationTests {
                 .description("Film3 description")
                 .releaseDate(LocalDate.of(2023, 04, 16))
                 .duration(Duration.ofSeconds(120))
+                .mpa(RatingMPA.builder().id(1).name("G").build())
                 .build();
 
         mockMvc.perform(post("/films")

@@ -18,11 +18,11 @@ public interface UserStorage {
 
     public void clearUserMap();  //удаление всех пользователей
 
-    public User addFriend(long user1Id, long user2Id); //добавление в друзья
+    public User addFriend(Long userId, Long friendId); //добавление в друзья
 
     public List<User> getFriends(Long userId);  //получение списка друзей
 
     public List<User> getListOfMutualFriends(Long user1Id, Long user2Id);  //получение списка общих друзей
 
-    public ResponseEntity<?> deleteFriend(Long user1Id, Long user2Id);   //удаление друга
+    public ResponseEntity<?> deleteFriend(Long userId, Long friendId);   //удаление друга
 }

@@ -3,6 +3,8 @@ package ru.yandex.practicum.filmorate.storage.film;
 import org.springframework.http.ResponseEntity;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.model.Genre;
+import ru.yandex.practicum.filmorate.model.RatingMPA;
 
 import java.util.List;
 
@@ -25,4 +27,11 @@ public interface FilmStorage {
     public List<Film> getRatingOfFilms(Long number) throws ValidationException;  //вывод определённого колличества
     // фильмов из рейтинга
 
+    public RatingMPA getRatingMPAById(Integer id);  //получение рейтинга mpa по id
+
+    public List<RatingMPA> getAllRatingMPA();  //вывод всех рейтингов mpa
+
+    public Genre getGenreById(Integer id);  //получение жанра по id
+
+    public List<Genre> getAllGenre();  //вывод всех жанров
 }
