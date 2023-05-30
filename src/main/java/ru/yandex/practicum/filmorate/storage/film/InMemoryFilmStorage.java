@@ -55,7 +55,7 @@ public class InMemoryFilmStorage implements FilmStorage {  //добавлени�
     }
 
     @Override
-    public ResponseEntity<?> addFilm(Film film) throws ValidationException {  //добавление фильма
+    public ResponseEntity<Film> addFilm(Film film) throws ValidationException {  //добавление фильма
         if (film.getReleaseDate().isBefore(LocalDate.of(1895, 12, 28))) {
             throw new ValidationException("Дата создания фильма не может быть раньше 28.12.1895");
         }
@@ -80,7 +80,7 @@ public class InMemoryFilmStorage implements FilmStorage {  //добавлени�
     }
 
     @Override
-    public ResponseEntity<?> updateFilm(Film film) throws ValidationException {  //обновление фильма
+    public ResponseEntity<Film> updateFilm(Film film) throws ValidationException {  //обновление фильма
         if (film.getReleaseDate().isBefore(LocalDate.of(1895, 12, 28))) {
             throw new ValidationException("Дата создания фильма не может быть раньше 28.12.1895");
         }

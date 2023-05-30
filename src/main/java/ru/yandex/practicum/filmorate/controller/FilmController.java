@@ -23,12 +23,12 @@ public class FilmController {
     }
 
     @PostMapping("/films")  //добавление фильма
-    public ResponseEntity<?> addFilm(@Valid @RequestBody Film film) throws ValidationException {
+    public ResponseEntity<Film> addFilm(@Valid @RequestBody Film film) throws ValidationException {
         return filmService.addFilm(film);
     }
 
     @PutMapping("/films")  //обновление фильма
-    public ResponseEntity<?> updateFilm(@Valid @RequestBody Film film) throws ValidationException {
+    public ResponseEntity<Film> updateFilm(@Valid @RequestBody Film film) throws ValidationException {
         return filmService.updateFilm(film);
     }
 

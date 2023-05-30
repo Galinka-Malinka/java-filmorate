@@ -22,11 +22,11 @@ public class FilmService {
         this.filmStorage = filmStorage;
     }
 
-    public ResponseEntity<?> addFilm(Film film) throws ValidationException {  //добавление фильма
+    public ResponseEntity<Film> addFilm(Film film) throws ValidationException {  //добавление фильма
         return filmStorage.addFilm(film);
     }
 
-    public ResponseEntity<?> updateFilm(Film film) throws ValidationException {  //обновление фильма
+    public ResponseEntity<Film> updateFilm(Film film) throws ValidationException {  //обновление фильма
         return filmStorage.updateFilm(film);
     }
 

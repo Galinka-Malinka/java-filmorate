@@ -7,7 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Repository;
 import ru.yandex.practicum.filmorate.exception.*;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Genre;
@@ -25,7 +25,7 @@ import java.util.List;
 import java.util.Set;
 
 @Slf4j
-@Component("filmDBStorage")
+@Repository("filmDBStorage")
 public class FilmDbStorage implements FilmStorage {
 
     private final JdbcTemplate jdbcTemplate;
@@ -35,21 +35,8 @@ public class FilmDbStorage implements FilmStorage {
     }
 
     @Override  //добавление фильма
-    public ResponseEntity<?> addFilm(Film film) throws ValidationException {
-        if (film.getReleaseDate().isBefore(LocalDate.of(1895, 12, 28))) {
-            throw new ValidationException("Дата создания фильма не может быть раньше 28.12.1895");
-        }
-        if (film.getDuration().isNegative()) {
-            throw new ValidationException("Продолжительность не может быть отрицательной");
-        }
-
-        Set<Genre> genresSet = new LinkedHashSet<>(film.getGenres());
-        film.deleteAllGenres();
-        for (Genre genre : genresSet) {
-            String sqlForGenre = "select genre_id, name from genre where genre_id = ?";
-            Genre newGenre = jdbcTemplate.queryForObject(sqlForGenre, this::mapRowToGenre, genre.getId());
-            film.addGenre(newGenre);
-        }
+    public ResponseEntity<Film> addFilm(Film film) throws ValidationException {
+        checkEnteredData(film);
 
         String sql = "insert into film (name, description, release_date, duration, rating_id) values (?, ?, ?, ?, ?)";
         KeyHolder keyHolder = new GeneratedKeyHolder();
@@ -66,39 +53,17 @@ public class FilmDbStorage implements FilmStorage {
 
         film.setId(filmId);
 
-        for (Genre genre : film.getGenres()) { // добавление информации о жанрах фильма в таблицу genre_of_film
-            String sqlQuery = "insert into genre_of_film (film_id, genre_id) values(?, ?)";
-            jdbcTemplate.update(sqlQuery, filmId, genre.getId());
-
-            String sqlForGenre = "select genre_id, name from genre where genre_id = ?";
-            Genre newGenre = jdbcTemplate.queryForObject(sqlForGenre, this::mapRowToGenre, genre.getId());
-            film.setNameGenre(newGenre);
-        }
-
-        String sqlForMpa = "select name from rating where rating_id =?";
-        String mpa = jdbcTemplate.queryForObject(sqlForMpa, this::mapRowToNameMPA, film.getMpa().getId());
-        film.getMpa().setName(mpa);
+        addGenresToBDAndAddTheirName(film);
+        addMPAName(film);
 
         log.debug("Добавление фильма: {}", film.getName());
         return new ResponseEntity<>(film, HttpStatus.CREATED);
     }
 
     @Override  //обновление фильма
-    public ResponseEntity<?> updateFilm(Film film) throws ValidationException {
-        try {
-            String sqlForUserId = "select film_id from film where film_id = ?";
-            jdbcTemplate.queryForObject(sqlForUserId, this::mapRowToIdFilm, film.getId());
-        } catch (EmptyResultDataAccessException e) {
-            throw new FilmNotFoundException("Фильма с таким id не существует");
-        }
-
-        Set<Genre> genresSet = new LinkedHashSet<>(film.getGenres());
-        film.deleteAllGenres();
-        for (Genre genre : genresSet) {
-            String sqlForGenre = "select genre_id, name from genre where genre_id = ?";
-            Genre newGenre = jdbcTemplate.queryForObject(sqlForGenre, this::mapRowToGenre, genre.getId());
-            film.addGenre(newGenre);
-        }
+    public ResponseEntity<Film> updateFilm(Film film) throws ValidationException {
+        checkEnteredData(film);
+        checkFilmId(film.getId());
 
         String sql = "update film set " +
                 "film_id = ?, name = ?, description = ?, release_date = ?, duration = ?, rating_id = ? " +
@@ -116,25 +81,9 @@ public class FilmDbStorage implements FilmStorage {
         String sqlForDeleteAllGenres = "delete from genre_of_film where film_id = ?";
         jdbcTemplate.update(sqlForDeleteAllGenres, film.getId());
 
-        for (Genre genre : film.getGenres()) {
-            String sqlQuery = "insert into genre_of_film (film_id, genre_id) values(?, ?)";
-            jdbcTemplate.update(sqlQuery, film.getId(), genre.getId());
-
-            String sqlForGenre = "select genre_id, name from genre where genre_id = ?";
-            Genre newGenre = jdbcTemplate.queryForObject(sqlForGenre, this::mapRowToGenre, genre.getId());
-            film.setNameGenre(newGenre);
-        }
-
-        String sqlForMpa = "select name from rating where rating_id =?";
-        String mpa = jdbcTemplate.queryForObject(sqlForMpa, this::mapRowToNameMPA, film.getMpa().getId());
-        film.getMpa().setName(mpa);
-
-        String sqlForLikes = "select user_id from likes where film_id = ?";
-        List<Long> listOfLikes = jdbcTemplate.query(sqlForLikes, this::mapRowToIdUser, film.getId());
-
-        for (Long likeId : listOfLikes) {
-            film.addLike(likeId);
-        }
+        addGenresToBDAndAddTheirName(film);
+        addMPAName(film);
+        addLikesToFilm(film);
 
         log.debug("Обновление фильма: {}", film.getName());
         return new ResponseEntity<>(film, HttpStatus.OK);
@@ -147,23 +96,215 @@ public class FilmDbStorage implements FilmStorage {
         List<Film> filmList = jdbcTemplate.query(sql, this::mapRowToFilm);
 
         for (Film film : filmList) {
-            String sqlForGenreId = "select genre_id from genre_of_film where film_id = ?";
-            List<Integer> genreList = jdbcTemplate.query(sqlForGenreId, this::mapRowToIDGenre, film.getId());
-
-            if (!genreList.isEmpty()) {
-                for (Integer genreId : genreList) {
-                    String sqlForGenre = "select genre_id, name from genre where genre_id = ?";
-                    Genre genre = jdbcTemplate.queryForObject(sqlForGenre, this::mapRowToGenre, genreId);
-                    film.addGenre(genre);
-                }
-            }
-            String sqlForLikes = "select user_id from likes where film_id = ?";
-            List<Long> listOfLikes = jdbcTemplate.query(sqlForLikes, this::mapRowToIdUser, film.getId());
-            for (Long likeId : listOfLikes) {
-                film.addLike(likeId);
-            }
+            addGenreToFilm(film);
+            addLikesToFilm(film);
         }
         return filmList;
+    }
+
+    @Override  //получение фильма по id
+    public Film getFilmById(long filmId) {
+        checkFilmId(filmId);
+
+        String sql = "select * from film where film_id = ?";
+        Film film = jdbcTemplate.queryForObject(sql, this::mapRowToFilm, filmId);
+
+        addGenreToFilm(film);
+        addLikesToFilm(film);
+
+        return film;
+    }
+
+    @Override  //удаление всех фильмов
+    public void clearFilmMap() {
+        String sql = "delete from film";
+        jdbcTemplate.update(sql);
+
+        String sqlForGenreOfFilm = "delete from genre_of_film";
+        jdbcTemplate.update(sqlForGenreOfFilm);
+
+        String sqlForLikes = "delete from likes";
+        jdbcTemplate.update(sqlForLikes);
+    }
+
+    @Override   //добавление лайка
+    public Film addLike(long filmId, long userId) {
+        checkFilmId(filmId);
+        checkUserId(userId);
+
+        String sqlForFilm = "select * from film where film_id = ?";
+        Film film = jdbcTemplate.queryForObject(sqlForFilm, this::mapRowToFilm, filmId);
+
+        addGenreToFilm(film);
+        addLikesToFilm(film);
+
+        film.addLike(userId);
+
+        String sql = "insert into likes (film_id, user_id) values (?, ?)";
+        jdbcTemplate.update(sql, filmId, userId);
+        return film;
+    }
+
+    @Override   //удаление лайка
+    public Film deleteLike(long filmId, long userId) {
+        checkFilmId(filmId);
+        checkUserId(userId);
+
+        String sqlForFilm = "select * from film where film_id = ?";
+        Film film = jdbcTemplate.queryForObject(sqlForFilm, this::mapRowToFilm, filmId);
+
+        addGenreToFilm(film);
+        addLikesToFilm(film);
+
+        film.deleteLike(userId);
+
+        String sqlForDeleteLikes = "delete from likes where film_id = ? and user_id = ?";
+        jdbcTemplate.update(sqlForDeleteLikes, filmId, userId);
+        return film;
+    }
+
+
+    @Override  //вывод определённого колличества фильмов из рейтинга
+    public List<Film> getRatingOfFilms(Long number) throws ValidationException {
+        if (number < 0) {
+            throw new ValidationException("Параметр count не может быть отрицательным");
+        }
+
+        String sqlForRating = "(select film_id from likes group by film_id order by count(user_id) desc) limit ?";
+        List<Long> listFilmID = jdbcTemplate.query(sqlForRating, this::mapRowToIdFilm, number);
+
+        if (listFilmID.size() != number) {
+            Long remainingNumber = number - listFilmID.size();
+            String sqlForFilmWithoutRating = "select film_id from film where film_id not in "
+                    + "(select film_id from likes) limit ?";
+            List<Long> listOfFilmWithoutRating = jdbcTemplate.query(sqlForFilmWithoutRating, this::mapRowToIdFilm,
+                    remainingNumber);
+            listFilmID.addAll(listOfFilmWithoutRating);
+        }
+
+        List<Film> filmList = new ArrayList<>();
+        for (Long filmId : listFilmID) {
+            String sqlForFilm = "select * from film where film_id = ?";
+            Film film = jdbcTemplate.queryForObject(sqlForFilm, this::mapRowToFilm, filmId);
+            filmList.add(film);
+        }
+
+        for (Film film : filmList) {
+            addGenreToFilm(film);
+            addLikesToFilm(film);
+        }
+        return filmList;
+    }
+
+    @Override  //получение рейтинга mpa по id
+    public RatingMPA getRatingMPAById(Integer id) {
+        try {
+            String sqlForUserId = "select rating_id, name from rating where rating_id = ?";
+            jdbcTemplate.queryForObject(sqlForUserId, this::mapRowToRatingMPA, id);
+        } catch (EmptyResultDataAccessException e) {
+            throw new MPANotFoundException("mpa с таким id не существует");
+        }
+
+        String sql = "select rating_id, name from rating where rating_id = ?";
+        return jdbcTemplate.queryForObject(sql, this::mapRowToRatingMPA, id);
+    }
+
+    @Override  //вывод всех рейтингов mpa
+    public List<RatingMPA> getAllRatingMPA() {
+        String sql = "select rating_id, name from rating";
+        return jdbcTemplate.query(sql, this::mapRowToRatingMPA);
+    }
+
+    @Override   //получение жанра по id
+    public Genre getGenreById(Integer id) {
+        try {
+            String sqlForUserId = "select genre_id from genre where genre_id = ?";
+            jdbcTemplate.queryForObject(sqlForUserId, this::mapRowToIDGenre, id);
+        } catch (EmptyResultDataAccessException e) {
+            throw new GenreNotFoundException("Жанра с таким id не существует");
+        }
+
+        String sql = "select genre_id, name from genre where genre_id = ?";
+        return jdbcTemplate.queryForObject(sql, this::mapRowToGenre, id);
+    }
+
+    @Override  //вывод всех жанров
+    public List<Genre> getAllGenre() {
+        String sql = "select genre_id, name from genre";
+        return jdbcTemplate.query(sql, this::mapRowToGenre);
+    }
+
+    private void checkEnteredData(Film film) throws ValidationException {
+        if (film.getReleaseDate().isBefore(LocalDate.of(1895, 12, 28))) {
+            throw new ValidationException("Дата создания фильма не может быть раньше 28.12.1895");
+        }
+        if (film.getDuration().isNegative()) {
+            throw new ValidationException("Продолжительность не может быть отрицательной");
+        }
+        //исключение возможных дубликатов в ведённых жанрах
+        Set<Genre> genresSet = new LinkedHashSet<>(film.getGenres());
+        film.deleteAllGenres();
+        for (Genre genre : genresSet) {
+            String sqlForGenre = "select genre_id, name from genre where genre_id = ?";
+            Genre newGenre = jdbcTemplate.queryForObject(sqlForGenre, this::mapRowToGenre, genre.getId());
+            film.addGenre(newGenre);
+        }
+    }
+
+    private void checkFilmId(Long id) {
+        try {
+            String sqlForUserId = "select film_id from film where film_id = ?";
+            jdbcTemplate.queryForObject(sqlForUserId, this::mapRowToIdFilm, id);
+        } catch (EmptyResultDataAccessException e) {
+            throw new FilmNotFoundException("Фильма с таким id не существует");
+        }
+    }
+
+    private void checkUserId(Long id) {
+        try {
+            String sqlForUserId = "select user_id from \"user\" where user_id = ?";
+            jdbcTemplate.queryForObject(sqlForUserId, this::mapRowToIdUser, id);
+        } catch (EmptyResultDataAccessException e) {
+            throw new UserNotFoundException("Пользователя с таким id не существует");
+        }
+    }
+
+    private void addGenresToBDAndAddTheirName(Film film) {
+        for (Genre genre : film.getGenres()) {
+            String sqlQuery = "insert into genre_of_film (film_id, genre_id) values(?, ?)";
+            jdbcTemplate.update(sqlQuery, film.getId(), genre.getId());
+
+            String sqlForGenre = "select genre_id, name from genre where genre_id = ?";
+            Genre newGenre = jdbcTemplate.queryForObject(sqlForGenre, this::mapRowToGenre, genre.getId());
+            film.setNameGenre(newGenre);
+        }
+    }
+
+    private void addMPAName(Film film) {
+        String sqlForMpa = "select name from rating where rating_id =?";
+        String mpa = jdbcTemplate.queryForObject(sqlForMpa, this::mapRowToNameMPA, film.getMpa().getId());
+        film.getMpa().setName(mpa);
+    }
+
+    private void addLikesToFilm(Film film) {
+        String sqlForLikes = "select user_id from likes where film_id = ?";
+        List<Long> listOfLikes = jdbcTemplate.query(sqlForLikes, this::mapRowToIdUser, film.getId());
+
+        for (Long likeId : listOfLikes) {
+            film.addLike(likeId);
+        }
+    }
+
+    private void addGenreToFilm(Film film) {
+        String sqlForGenreId = "select genre_id from genre_of_film where film_id = ?";
+        List<Integer> genreList = jdbcTemplate.query(sqlForGenreId, this::mapRowToIDGenre, film.getId());
+        if (!genreList.isEmpty()) {
+            for (Integer genreId : genreList) {
+                String sqlForGenre = "select genre_id, name from genre where genre_id = ?";
+                Genre genre = jdbcTemplate.queryForObject(sqlForGenre, this::mapRowToGenre, genreId);
+                film.addGenre(genre);
+            }
+        }
     }
 
     private Film mapRowToFilm(ResultSet resultSet, int rowNum) throws SQLException {
@@ -206,222 +347,11 @@ public class FilmDbStorage implements FilmStorage {
         return resultSet.getLong("user_id");
     }
 
-    @Override  //получение фильма по id
-    public Film getFilmById(long filmId) {
-        try {
-            String sqlForUserId = "select film_id from film where film_id = ?";
-            jdbcTemplate.queryForObject(sqlForUserId, this::mapRowToIdFilm, filmId);
-        } catch (EmptyResultDataAccessException e) {
-            throw new FilmNotFoundException("Фильма с таким id не существует");
-        }
-
-        String sql = "select * from film where film_id = ?";
-        Film film = jdbcTemplate.queryForObject(sql, this::mapRowToFilm, filmId);
-
-        String sqlForGenreId = "select genre_id from genre_of_film where film_id = ?";
-        List<Integer> genreList = jdbcTemplate.query(sqlForGenreId, this::mapRowToIDGenre, filmId);
-        if (!genreList.isEmpty()) {
-            for (Integer genreId : genreList) {
-                String sqlForGenre = "select genre_id, name from genre where genre_id = ?";
-                Genre genre = jdbcTemplate.queryForObject(sqlForGenre, this::mapRowToGenre, genreId);
-                film.addGenre(genre);
-            }
-        }
-
-        String sqlForLikes = "select user_id from likes where film_id = ?";
-        List<Long> listOfLikes = jdbcTemplate.query(sqlForLikes, this::mapRowToIdUser, filmId);
-        for (Long likeId : listOfLikes) {
-            film.addLike(likeId);
-        }
-
-        return film;
-    }
-
-    @Override  //удаление всех фильмов
-    public void clearFilmMap() {
-        String sql = "delete from film";
-        jdbcTemplate.update(sql);
-
-        String sqlForGenreOfFilm = "delete from genre_of_film";
-        jdbcTemplate.update(sqlForGenreOfFilm);
-
-        String sqlForLikes = "delete from likes";
-        jdbcTemplate.update(sqlForLikes);
-    }
-
-    @Override   //добавление лайка
-    public Film addLike(long filmId, long userId) {
-        try {
-            String sqlForUserId = "select user_id from \"user\" where user_id = ?";
-            jdbcTemplate.queryForObject(sqlForUserId, this::mapRowToIdUser, userId);
-        } catch (EmptyResultDataAccessException e) {
-            throw new UserNotFoundException("Пользователя с таким id не существует");
-        }
-
-        try {
-            String sqlForUserId = "select film_id from film where film_id = ?";
-            jdbcTemplate.queryForObject(sqlForUserId, this::mapRowToIdFilm, filmId);
-        } catch (EmptyResultDataAccessException e) {
-            throw new FilmNotFoundException("Фильма с таким id не существует");
-        }
-
-        String sqlForFilm = "select * from film where film_id = ?";
-        Film film = jdbcTemplate.queryForObject(sqlForFilm, this::mapRowToFilm, filmId);
-
-        String sqlForGenreId = "select genre_id from genre_of_film where film_id = ?";
-        List<Integer> genreList = jdbcTemplate.query(sqlForGenreId, this::mapRowToIDGenre, filmId);
-        if (!genreList.isEmpty()) {
-            for (Integer genreId : genreList) {
-                String sqlForGenre = "select genre_id, name from genre where genre_id = ?";
-                Genre genre = jdbcTemplate.queryForObject(sqlForGenre, this::mapRowToGenre, genreId);
-                film.addGenre(genre);
-            }
-        }
-
-        String sqlForLikes = "select user_id from likes where film_id = ?";
-        List<Long> listOfLikes = jdbcTemplate.query(sqlForLikes, this::mapRowToIdUser, filmId);
-        for (Long likeId : listOfLikes) {
-            film.addLike(likeId);
-        }
-
-        film.addLike(userId);
-
-        String sql = "insert into likes (film_id, user_id) values (?, ?)";
-        jdbcTemplate.update(sql, filmId, userId);
-        return film;
-    }
-
-    @Override   //удаление лайка
-    public Film deleteLike(long filmId, long userId) {
-        try {
-            String sqlForUserId = "select user_id from \"user\" where user_id = ?";
-            jdbcTemplate.queryForObject(sqlForUserId, this::mapRowToIdUser, userId);
-        } catch (EmptyResultDataAccessException e) {
-            throw new UserNotFoundException("Пользователя с таким id не существует");
-        }
-
-        try {
-            String sqlForUserId = "select film_id from film where film_id = ?";
-            jdbcTemplate.queryForObject(sqlForUserId, this::mapRowToIdFilm, filmId);
-        } catch (EmptyResultDataAccessException e) {
-            throw new FilmNotFoundException("Фильма с таким id не существует");
-        }
-
-        String sqlForFilm = "select * from film where film_id = ?";
-        Film film = jdbcTemplate.queryForObject(sqlForFilm, this::mapRowToFilm, filmId);
-
-        String sqlForGenreId = "select genre_id from genre_of_film where film_id = ?";
-        List<Integer> genreList = jdbcTemplate.query(sqlForGenreId, this::mapRowToIDGenre, filmId);
-        if (!genreList.isEmpty()) {
-            for (Integer genreId : genreList) {
-                String sqlForGenre = "select genre_id, name from genre where genre_id = ?";
-                Genre genre = jdbcTemplate.queryForObject(sqlForGenre, this::mapRowToGenre, genreId);
-                film.addGenre(genre);
-            }
-        }
-
-        String sqlForLikes = "select user_id from likes where film_id = ?";
-        List<Long> listOfLikes = jdbcTemplate.query(sqlForLikes, this::mapRowToIdUser, filmId);
-        for (Long likeId : listOfLikes) {
-            film.addLike(likeId);
-        }
-
-        film.deleteLike(userId);
-
-        String sqlForDeleteLikes = "delete from likes where film_id = ? and user_id = ?";
-        jdbcTemplate.update(sqlForDeleteLikes, filmId, userId);
-        return film;
-    }
-
-
-    @Override  //вывод определённого колличества фильмов из рейтинга
-    public List<Film> getRatingOfFilms(Long number) throws ValidationException {
-        if (number < 0) {
-            throw new ValidationException("Параметр count не может быть отрицательным");
-        }
-
-        String sqlForRating = "(select film_id from likes group by film_id order by count(user_id) desc) limit ?";
-        List<Long> listFilmID = jdbcTemplate.query(sqlForRating, this::mapRowToIdFilm, number);
-
-        if (listFilmID.size() != number) {
-            Long remainingNumber = number - listFilmID.size();
-            String sqlForFilmWithoutRating = "select film_id from film where film_id not in "
-                    + "(select film_id from likes) limit ?";
-            List<Long> listOfFilmWithoutRating = jdbcTemplate.query(sqlForFilmWithoutRating, this::mapRowToIdFilm,
-                    remainingNumber);
-            listFilmID.addAll(listOfFilmWithoutRating);
-        }
-
-        List<Film> filmList = new ArrayList<>();
-        for (Long filmId : listFilmID) {
-            String sqlForFilm = "select * from film where film_id = ?";
-            Film film = jdbcTemplate.queryForObject(sqlForFilm, this::mapRowToFilm, filmId);
-            filmList.add(film);
-        }
-
-        for (Film film : filmList) {
-            String sqlForGenreId = "select genre_id from genre_of_film where film_id = ?";
-            List<Integer> genreList = jdbcTemplate.query(sqlForGenreId, this::mapRowToIDGenre, film.getId());
-            if (!genreList.isEmpty()) {
-                for (Integer genreId : genreList) {
-                    String sqlForGenre = "select genre_id, name from genre where genre_id = ?";
-                    Genre genre = jdbcTemplate.queryForObject(sqlForGenre, this::mapRowToGenre, genreId);
-                    film.addGenre(genre);
-                }
-            }
-
-            String sqlForLikes = "select user_id from likes where film_id = ?";
-            List<Long> listOfLikes = jdbcTemplate.query(sqlForLikes, this::mapRowToIdUser, film.getId());
-            for (Long likeId : listOfLikes) {
-                film.addLike(likeId);
-            }
-        }
-        return filmList;
-    }
-
-    @Override  //получение рейтинга mpa по id
-    public RatingMPA getRatingMPAById(Integer id) {
-        try {
-            String sqlForUserId = "select rating_id, name from rating where rating_id = ?";
-            jdbcTemplate.queryForObject(sqlForUserId, this::mapRowToRatingMPA, id);
-        } catch (EmptyResultDataAccessException e) {
-            throw new MPANotFoundException("mpa с таким id не существует");
-        }
-
-        String sql = "select rating_id, name from rating where rating_id = ?";
-        return jdbcTemplate.queryForObject(sql, this::mapRowToRatingMPA, id);
-    }
-
-    @Override  //вывод всех рейтингов mpa
-    public List<RatingMPA> getAllRatingMPA() {
-        String sql = "select rating_id, name from rating";
-        return jdbcTemplate.query(sql, this::mapRowToRatingMPA);
-    }
-
     private RatingMPA mapRowToRatingMPA(ResultSet resultSet, int rowNum) throws SQLException {
         return RatingMPA.builder()
                 .id(resultSet.getInt("rating_id"))
                 .name(resultSet.getString("name"))
                 .build();
-    }
-
-    @Override   //получение жанра по id
-    public Genre getGenreById(Integer id) {
-        try {
-            String sqlForUserId = "select genre_id from genre where genre_id = ?";
-            jdbcTemplate.queryForObject(sqlForUserId, this::mapRowToIDGenre, id);
-        } catch (EmptyResultDataAccessException e) {
-            throw new GenreNotFoundException("Жанра с таким id не существует");
-        }
-
-        String sql = "select genre_id, name from genre where genre_id = ?";
-        return jdbcTemplate.queryForObject(sql, this::mapRowToGenre, id);
-    }
-
-    @Override  //вывод всех жанров
-    public List<Genre> getAllGenre() {
-        String sql = "select genre_id, name from genre";
-        return jdbcTemplate.query(sql, this::mapRowToGenre);
     }
 
     private Genre mapRowToGenre(ResultSet resultSet, int rowNum) throws SQLException {

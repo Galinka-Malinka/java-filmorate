@@ -7,7 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Repository;
 import ru.yandex.practicum.filmorate.exception.UserNotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.User;
@@ -21,7 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Slf4j
-@Component("userDbStorage")
+@Repository("userDbStorage")
 public class UserDbStorage implements UserStorage {
 
     private final JdbcTemplate jdbcTemplate;
@@ -31,13 +31,8 @@ public class UserDbStorage implements UserStorage {
     }
 
     @Override  //добавление пользователя
-    public ResponseEntity<?> addUser(User user) throws ValidationException {
-        if (user.getLogin().contains(" ")) {
-            throw new ValidationException("В логине не должно быть пробелов");
-        }
-        if (user.getName() == null || user.getName().isBlank()) {
-            user.setName(user.getLogin());
-        }
+    public ResponseEntity<User> addUser(User user) throws ValidationException {
+        checkEnteredData(user);
 
         String sql = "insert into \"user\" (login, name, email, birthday) values (?, ?, ?, ?)";
         KeyHolder keyHolder = new GeneratedKeyHolder();
@@ -57,13 +52,9 @@ public class UserDbStorage implements UserStorage {
     }
 
     @Override  //обновление пользователя
-    public ResponseEntity<?> updateUser(User user) throws ValidationException {
-        try {
-            String sqlForUserId = "select user_id from \"user\" where user_id = ?";
-            jdbcTemplate.queryForObject(sqlForUserId, this::mapRowToIdUser, user.getId());
-        } catch (EmptyResultDataAccessException e) {
-            throw new UserNotFoundException("Пользователя с таким id не существует");
-        }
+    public ResponseEntity<User> updateUser(User user) throws ValidationException {
+        checkEnteredData(user);
+        checkUserId(user.getId());
 
         String sql = "update \"user\" set " +
                 "user_id = ?, login = ?, name = ?, email = ?, birthday = ? " +
@@ -87,97 +78,20 @@ public class UserDbStorage implements UserStorage {
         List<User> userList = jdbcTemplate.query(sql, this::mapRowToUser);
 
         for (User user : userList) {
-            String sqlForFriendsConfirmed = "select friend_id as user_id from friends where user_id = ? "
-                    + "and friendship_status_id = 1"
-                    + "union "
-                    + "select user_id from friends where friend_id = ? and friendship_status_id = 1";
-            List<Long> listConfirmedFriendsId = jdbcTemplate.query(sqlForFriendsConfirmed, this::mapRowToIdUser,
-                    user.getId(), user.getId());
-
-            if (!listConfirmedFriendsId.isEmpty()) {
-                for (Long friendId : listConfirmedFriendsId) {
-                    String sqlForFriend = "select * from \"user\" where user_id = ?";
-                    User friend = jdbcTemplate.queryForObject(sqlForFriend, this::mapRowToUser, friendId);
-                    user.addFriend(friend);
-                    user.setStatusFriendship(friendId, "confirmed");
-                }
-            }
-
-            String sqlForFriendsUnconfirmed = "select friend_id from friends where user_id = ? "
-                    + "and friendship_status_id = 2";
-            List<Long> listUnconfirmedFriendsId = jdbcTemplate.query(sqlForFriendsUnconfirmed, this::mapRowToIdFriend,
-                    user.getId());
-
-            if (!listUnconfirmedFriendsId.isEmpty()) {
-                for (Long friendId : listUnconfirmedFriendsId) {
-                    String sqlForFriend = "select * from \"user\" where user_id = ?";
-                    User friend = jdbcTemplate.queryForObject(sqlForFriend, this::mapRowToUser, friendId);
-                    user.addFriend(friend);
-                    user.setStatusFriendship(friendId, "unconfirmed");
-                }
-            }
+            addFriendsToUser(user);
         }
         return userList;
     }
 
-    private Long mapRowToIdFriend(ResultSet resultSet, int rowNum) throws SQLException {
-        return resultSet.getLong("friend_id");
-    }
-
-    private User mapRowToUser(ResultSet resultSet, int rowNum) throws SQLException {
-        return User.builder()
-                .id(resultSet.getLong("user_id"))
-                .login(resultSet.getString("login"))
-                .name(resultSet.getString("name"))
-                .email(resultSet.getString("email"))
-                .birthday(LocalDate.parse(resultSet.getString("birthday")))
-                .build();
-    }
-
     @Override  //получение пользователя по id
     public User getUserById(long id) {
-        try {
-            String sqlForUserId = "select user_id from \"user\" where user_id = ?";
-            jdbcTemplate.queryForObject(sqlForUserId, this::mapRowToIdUser, id);
-        } catch (EmptyResultDataAccessException e) {
-            throw new UserNotFoundException("Пользователя с таким id не существует");
-        }
+        checkUserId(id);
 
         String sqlForUser = "select * from \"user\" where user_id = ?";
         User user = jdbcTemplate.queryForObject(sqlForUser, this::mapRowToUser, id);
 
-        String sqlForFriendsConfirmed = "select friend_id as user_id from friends where user_id = ? "
-                + "and friendship_status_id = 1"
-                + "union "
-                + "select user_id from friends where friend_id = ? and friendship_status_id = 1";
-        List<Long> listConfirmedFriendsId = jdbcTemplate.query(sqlForFriendsConfirmed, this::mapRowToIdUser, id, id);
-
-        if (!listConfirmedFriendsId.isEmpty()) {
-            for (Long friendId : listConfirmedFriendsId) {
-                String sqlForFriend = "select * from \"user\" where user_id = ?";
-                User friend = jdbcTemplate.queryForObject(sqlForFriend, this::mapRowToUser, friendId);
-                user.addFriend(friend);
-                user.setStatusFriendship(friendId, "confirmed");
-            }
-        }
-
-        String sqlForFriendsUnconfirmed = "select friend_id from friends where user_id = ? "
-                + "and friendship_status_id = 2";
-        List<Long> listUnconfirmedFriendsId = jdbcTemplate.query(sqlForFriendsUnconfirmed, this::mapRowToIdFriend, id);
-
-        if (!listUnconfirmedFriendsId.isEmpty()) {
-            for (Long friendId : listUnconfirmedFriendsId) {
-                String sqlForFriend = "select * from \"user\" where user_id = ?";
-                User friend = jdbcTemplate.queryForObject(sqlForFriend, this::mapRowToUser, friendId);
-                user.addFriend(friend);
-                user.setStatusFriendship(friendId, "unconfirmed");
-            }
-        }
+        addFriendsToUser(user);
         return user;
-    }
-
-    private Long mapRowToIdUser(ResultSet resultSet, int rowNum) throws SQLException {
-        return resultSet.getLong("user_id");
     }
 
     @Override  //удаление всех пользователей
@@ -194,81 +108,8 @@ public class UserDbStorage implements UserStorage {
 
     @Override //добавление в друзья
     public User addFriend(Long userId, Long friendId) {
-        try {
-            String sqlForUserId = "select user_id from \"user\" where user_id = ?";
-            jdbcTemplate.queryForObject(sqlForUserId, this::mapRowToIdUser, userId);
-        } catch (EmptyResultDataAccessException e) {
-            throw new UserNotFoundException("Пользователя с таким id не существует");
-        }
-
-        try {
-            String sqlForUserId = "select user_id from \"user\" where user_id = ?";
-            jdbcTemplate.queryForObject(sqlForUserId, this::mapRowToIdUser, friendId);
-        } catch (EmptyResultDataAccessException e) {
-            throw new UserNotFoundException("Пользователя с таким id не существует");
-        }
-
-        String sqlForUser = "select * from \"user\" where user_id = ?";
-        User user = jdbcTemplate.queryForObject(sqlForUser, this::mapRowToUser, userId);
-
-        String sqlForFriendsConfirmed = "select friend_id from friends where user_id = ? "
-                + "and friendship_status_id = 1";
-        List<Long> listConfirmedFriendsId = jdbcTemplate.query(sqlForFriendsConfirmed, this::mapRowToIdFriend, userId);
-
-        if (!listConfirmedFriendsId.isEmpty()) {
-            for (Long friendIdConfirmed : listConfirmedFriendsId) {
-                String sqlForFriend = "select * from \"user\" where user_id = ?";
-                User friend = jdbcTemplate.queryForObject(sqlForFriend, this::mapRowToUser, friendIdConfirmed);
-                user.addFriend(friend);
-                user.setStatusFriendship(friendIdConfirmed, "confirmed");
-            }
-        }
-
-        String sqlForFriendsUnconfirmed = "select friend_id from friends where user_id = ? "
-                + "and friendship_status_id = 2";
-        List<Long> listUnconfirmedFriendsId = jdbcTemplate.query(sqlForFriendsUnconfirmed, this::mapRowToIdFriend,
-                userId);
-
-        if (!listUnconfirmedFriendsId.isEmpty()) {
-            for (Long friendIdUnconfirmed : listUnconfirmedFriendsId) {
-                String sqlForFriend = "select * from \"user\" where user_id = ?";
-                User friend = jdbcTemplate.queryForObject(sqlForFriend, this::mapRowToUser, friendIdUnconfirmed);
-                user.addFriend(friend);
-                user.setStatusFriendship(friendIdUnconfirmed, "unconfirmed");
-            }
-        }
-
-        String sqlForFriend = "select * from \"user\" where user_id = ?";
-        User friend = jdbcTemplate.queryForObject(sqlForFriend, this::mapRowToUser, friendId);
-
-        String sqlForFriendsConfirmedOfFriend = "select friend_id from friends where user_id = ? "
-                + "and friendship_status_id = 1";
-        List<Long> listConfirmedFriends = jdbcTemplate.query(sqlForFriendsConfirmedOfFriend, this::mapRowToIdFriend,
-                friendId);
-
-        if (!listConfirmedFriends.isEmpty()) {
-            for (Long friendIdConfirmed : listConfirmedFriends) {
-                String sqlForFriends = "select * from \"user\" where user_id = ?";
-                User friendOfFriend = jdbcTemplate.queryForObject(sqlForFriends, this::mapRowToUser, friendIdConfirmed);
-                friend.addFriend(friendOfFriend);
-                friend.setStatusFriendship(friendIdConfirmed, "confirmed");
-            }
-        }
-
-        String sqlForFriendsUnconfirmedOfFriend = "select friend_id from friends where user_id = ? "
-                + "and friendship_status_id = 2";
-        List<Long> listUnconfirmedFriends = jdbcTemplate.query(sqlForFriendsUnconfirmedOfFriend, this::mapRowToIdFriend,
-                friendId);
-
-        if (!listUnconfirmedFriends.isEmpty()) {
-            for (Long friendIdUnconfirmed : listUnconfirmedFriends) {
-                String sqlForFriendForFriend = "select * from \"user\" where user_id = ?";
-                User friendOfFriend = jdbcTemplate.queryForObject(sqlForFriendForFriend, this::mapRowToUser,
-                        friendIdUnconfirmed);
-                friend.addFriend(friendOfFriend);
-                friend.setStatusFriendship(friendIdUnconfirmed, "unconfirmed");
-            }
-        }
+        User user = getUserById(userId);
+        User friend = getUserById(friendId);
 
         if (friend.isFriend(userId)) {
             String sql = "update friends set friendship_status_id = ? where user_id = ? and friend_id = ?";
@@ -284,12 +125,7 @@ public class UserDbStorage implements UserStorage {
 
     @Override  //получение списка друзей
     public List<User> getFriends(Long userId) {
-        try {
-            String sqlForUserId = "select user_id from \"user\" where user_id = ?";
-            jdbcTemplate.queryForObject(sqlForUserId, this::mapRowToIdUser, userId);
-        } catch (EmptyResultDataAccessException e) {
-            throw new UserNotFoundException("Пользователя с таким id не существует");
-        }
+        checkUserId(userId);
 
         String sql = "select friend_id as user_id from friends where user_id = ? "
                 + "union "
@@ -311,19 +147,8 @@ public class UserDbStorage implements UserStorage {
 
     @Override  //получение списка общих друзей
     public List<User> getListOfMutualFriends(Long user1Id, Long user2Id) {
-        try {
-            String sqlForUserId = "select user_id from \"user\" where user_id = ?";
-            jdbcTemplate.queryForObject(sqlForUserId, this::mapRowToIdUser, user1Id);
-        } catch (EmptyResultDataAccessException e) {
-            throw new UserNotFoundException("Пользователя с таким id не существует");
-        }
-
-        try {
-            String sqlForUserId = "select user_id from \"user\" where user_id = ?";
-            jdbcTemplate.queryForObject(sqlForUserId, this::mapRowToIdUser, user2Id);
-        } catch (EmptyResultDataAccessException e) {
-            throw new UserNotFoundException("Пользователя с таким id не существует");
-        }
+        checkUserId(user1Id);
+        checkUserId(user2Id);
 
         String sqlUser = "select friend_id as user_id from friends where user_id = ? "
                 + "union "
@@ -354,54 +179,84 @@ public class UserDbStorage implements UserStorage {
     }
 
     @Override   //удаление друга
-    public ResponseEntity<?> deleteFriend(Long userId, Long friendId) {
-        try {
-            String sqlForUserId = "select user_id from \"user\" where user_id = ?";
-            jdbcTemplate.queryForObject(sqlForUserId, this::mapRowToIdUser, userId);
-        } catch (EmptyResultDataAccessException e) {
-            throw new UserNotFoundException("Пользователя с таким id не существует");
-        }
-
-        try {
-            String sqlForUserId = "select user_id from \"user\" where user_id = ?";
-            jdbcTemplate.queryForObject(sqlForUserId, this::mapRowToIdUser, friendId);
-        } catch (EmptyResultDataAccessException e) {
-            throw new UserNotFoundException("Пользователя с таким id не существует");
-        }
+    public ResponseEntity<User> deleteFriend(Long userId, Long friendId) {
+        checkUserId(userId);
+        checkUserId(friendId);
 
         String sql = "delete from friends where user_id = ? and friend_id = ?";
         jdbcTemplate.update(sql, userId, friendId);
         jdbcTemplate.update(sql, friendId, userId);
 
-        String sqlForUser = "select * from \"user\" where user_id = ?";
-        User user = jdbcTemplate.queryForObject(sqlForUser, this::mapRowToUser, userId);
+        User user = getUserById(userId);
 
-        String sqlForFriendsConfirmed = "select friend_id from friends where user_id = ? "
-                + "and friendship_status_id = 1";
-        List<Long> listConfirmedFriendsId = jdbcTemplate.query(sqlForFriendsConfirmed, this::mapRowToIdFriend, userId);
+        return new ResponseEntity<>(user, HttpStatus.OK);
+    }
+
+    private Long mapRowToIdUser(ResultSet resultSet, int rowNum) throws SQLException {
+        return resultSet.getLong("user_id");
+    }
+
+    private Long mapRowToIdFriend(ResultSet resultSet, int rowNum) throws SQLException {
+        return resultSet.getLong("friend_id");
+    }
+
+    private User mapRowToUser(ResultSet resultSet, int rowNum) throws SQLException {
+        return User.builder()
+                .id(resultSet.getLong("user_id"))
+                .login(resultSet.getString("login"))
+                .name(resultSet.getString("name"))
+                .email(resultSet.getString("email"))
+                .birthday(LocalDate.parse(resultSet.getString("birthday")))
+                .build();
+    }
+
+    private void checkEnteredData(User user) throws ValidationException {
+        if (user.getLogin().contains(" ")) {
+            throw new ValidationException("В логине не должно быть пробелов");
+        }
+        if (user.getName() == null || user.getName().isBlank()) {
+            user.setName(user.getLogin());
+        }
+    }
+
+    private void checkUserId(Long id) {
+        try {
+            String sqlForUserId = "select user_id from \"user\" where user_id = ?";
+            jdbcTemplate.queryForObject(sqlForUserId, this::mapRowToIdUser, id);
+        } catch (EmptyResultDataAccessException e) {
+            throw new UserNotFoundException("Пользователя с таким id не существует");
+        }
+    }
+
+    private void addFriendsToUser(User user) {
+        String sqlForFriendsConfirmed = "select friend_id as user_id from friends where user_id = ? "
+                + "and friendship_status_id = 1"
+                + "union "
+                + "select user_id from friends where friend_id = ? and friendship_status_id = 1";
+        List<Long> listConfirmedFriendsId = jdbcTemplate.query(sqlForFriendsConfirmed, this::mapRowToIdUser,
+                user.getId(), user.getId());
 
         if (!listConfirmedFriendsId.isEmpty()) {
-            for (Long friendIdConfirmed : listConfirmedFriendsId) {
+            for (Long friendId : listConfirmedFriendsId) {
                 String sqlForFriend = "select * from \"user\" where user_id = ?";
-                User friend = jdbcTemplate.queryForObject(sqlForFriend, this::mapRowToUser, friendIdConfirmed);
+                User friend = jdbcTemplate.queryForObject(sqlForFriend, this::mapRowToUser, friendId);
                 user.addFriend(friend);
-                user.setStatusFriendship(friendIdConfirmed, "confirmed");
+                user.setStatusFriendship(friendId, "confirmed");
             }
         }
 
         String sqlForFriendsUnconfirmed = "select friend_id from friends where user_id = ? "
                 + "and friendship_status_id = 2";
         List<Long> listUnconfirmedFriendsId = jdbcTemplate.query(sqlForFriendsUnconfirmed, this::mapRowToIdFriend,
-                userId);
+                user.getId());
 
         if (!listUnconfirmedFriendsId.isEmpty()) {
-            for (Long friendIdUnconfirmed : listUnconfirmedFriendsId) {
+            for (Long friendId : listUnconfirmedFriendsId) {
                 String sqlForFriend = "select * from \"user\" where user_id = ?";
-                User friend = jdbcTemplate.queryForObject(sqlForFriend, this::mapRowToUser, friendIdUnconfirmed);
+                User friend = jdbcTemplate.queryForObject(sqlForFriend, this::mapRowToUser, friendId);
                 user.addFriend(friend);
-                user.setStatusFriendship(friendIdUnconfirmed, "unconfirmed");
+                user.setStatusFriendship(friendId, "unconfirmed");
             }
         }
-        return new ResponseEntity<>(user, HttpStatus.OK);
     }
 }

@@ -10,9 +10,9 @@ import java.util.List;
 
 public interface FilmStorage {
 
-    public ResponseEntity<?> addFilm(Film film) throws ValidationException;  //добавление фильма
+    public ResponseEntity<Film> addFilm(Film film) throws ValidationException;  //добавление фильма
 
-    public ResponseEntity<?> updateFilm(Film film) throws ValidationException;  //обновление фильма
+    public ResponseEntity<Film> updateFilm(Film film) throws ValidationException;  //обновление фильма
 
     public List<Film> getAllFilms(); //получение всех фильмов
 

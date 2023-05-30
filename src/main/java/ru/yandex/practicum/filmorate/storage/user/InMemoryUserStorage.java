@@ -23,7 +23,7 @@ public class InMemoryUserStorage implements UserStorage {
     private int id = 0;
 
     @Override
-    public ResponseEntity<?> addUser(User user) throws ValidationException {  //добавление пользователя
+    public ResponseEntity<User> addUser(User user) throws ValidationException {  //добавление пользователя
         if (user.getLogin().contains(" ")) {
             throw new ValidationException("В логине не должно быть пробелов");
         }
@@ -38,7 +38,7 @@ public class InMemoryUserStorage implements UserStorage {
     }
 
     @Override
-    public ResponseEntity<?> updateUser(User user) throws ValidationException {  //обновление пользователя
+    public ResponseEntity<User> updateUser(User user) throws ValidationException {  //обновление пользователя
         if (user.getLogin().contains(" ")) {
             throw new ValidationException("В логине не должно быть пробелов");
         }
@@ -115,7 +115,7 @@ public class InMemoryUserStorage implements UserStorage {
     }
 
     @Override
-    public ResponseEntity<?> deleteFriend(Long userId, Long friendId) {  //удаление друга
+    public ResponseEntity<User> deleteFriend(Long userId, Long friendId) {  //удаление друга
         if (!userMap.containsKey(userId)) {
             throw new UserNotFoundException("Пользователя с id = " + id + " не существует");
         }

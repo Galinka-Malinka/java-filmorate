@@ -8,9 +8,9 @@ import java.util.List;
 
 public interface UserStorage {
 
-    public ResponseEntity<?> addUser(User user) throws ValidationException;  //добавление пользователя
+    public ResponseEntity<User> addUser(User user) throws ValidationException;  //добавление пользователя
 
-    public ResponseEntity<?> updateUser(User user) throws ValidationException;  //обновление пользователя
+    public ResponseEntity<User> updateUser(User user) throws ValidationException;  //обновление пользователя
 
     public List<User> getAllUsers();  //получение всех пользователей
 
@@ -24,5 +24,5 @@ public interface UserStorage {
 
     public List<User> getListOfMutualFriends(Long user1Id, Long user2Id);  //получение списка общих друзей
 
-    public ResponseEntity<?> deleteFriend(Long userId, Long friendId);   //удаление друга
+    public ResponseEntity<User> deleteFriend(Long userId, Long friendId);   //удаление друга
 }

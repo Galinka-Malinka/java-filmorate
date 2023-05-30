@@ -24,7 +24,7 @@ public class UserService {
         return storage.addFriend(user1Id, user2Id);
     }
 
-    public ResponseEntity<?> deleteFriend(Long user1Id, Long user2Id) {   //удаление друга
+    public ResponseEntity<User> deleteFriend(Long user1Id, Long user2Id) {   //удаление друга
         return storage.deleteFriend(user1Id, user2Id);
     }
 
@@ -36,11 +36,11 @@ public class UserService {
         return storage.getListOfMutualFriends(user1Id, user2Id);
     }
 
-    public ResponseEntity<?> addUser(User user) throws ValidationException {  //добавление пользователя
+    public ResponseEntity<User> addUser(User user) throws ValidationException {  //добавление пользователя
         return storage.addUser(user);
     }
 
-    public ResponseEntity<?> updateUser(User user) throws ValidationException {  //обновление пользователя
+    public ResponseEntity<User> updateUser(User user) throws ValidationException {  //обновление пользователя
         return storage.updateUser(user);
     }
 
