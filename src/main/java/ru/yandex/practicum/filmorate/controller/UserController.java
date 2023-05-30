@@ -22,12 +22,12 @@ public class UserController {
     }
 
     @PostMapping  //добавление пользователя
-    public ResponseEntity<?> addUser(@Valid @RequestBody User user) throws ValidationException {
+    public ResponseEntity<User> addUser(@Valid @RequestBody User user) throws ValidationException {
         return userService.addUser(user);
     }
 
     @PutMapping  //обновление пользователя
-    public ResponseEntity<?> updateUser(@Valid @RequestBody User user) throws ValidationException {
+    public ResponseEntity<User> updateUser(@Valid @RequestBody User user) throws ValidationException {
         return userService.updateUser(user);
     }
 
@@ -52,7 +52,7 @@ public class UserController {
     }
 
     @DeleteMapping("/{id}/friends/{friendId}")  //удаление друга
-    public ResponseEntity<?> deleteFriend(@PathVariable long id, @PathVariable long friendId) {
+    public ResponseEntity<User> deleteFriend(@PathVariable long id, @PathVariable long friendId) {
         return userService.deleteFriend(id, friendId);
     }
 

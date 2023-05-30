@@ -5,6 +5,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.model.Genre;
+import ru.yandex.practicum.filmorate.model.RatingMPA;
 import ru.yandex.practicum.filmorate.service.FilmService;
 
 import javax.validation.Valid;
@@ -12,7 +14,7 @@ import java.util.List;
 
 @RestController
 @Slf4j
-@RequestMapping("/films")
+@RequestMapping
 public class FilmController {
     private final FilmService filmService;
 
@@ -20,44 +22,64 @@ public class FilmController {
         this.filmService = filmService;
     }
 
-    @PostMapping  //добавление фильма
-    public ResponseEntity<?> addFilm(@Valid @RequestBody Film film) throws ValidationException {
+    @PostMapping("/films")  //добавление фильма
+    public ResponseEntity<Film> addFilm(@Valid @RequestBody Film film) throws ValidationException {
         return filmService.addFilm(film);
     }
 
-    @PutMapping  //обновление фильма
-    public ResponseEntity<?> updateFilm(@Valid @RequestBody Film film) throws ValidationException {
+    @PutMapping("/films")  //обновление фильма
+    public ResponseEntity<Film> updateFilm(@Valid @RequestBody Film film) throws ValidationException {
         return filmService.updateFilm(film);
     }
 
-    @GetMapping  //получение всех фильмов
+    @GetMapping("/films")  //получение всех фильмов
     public List<Film> getAllFilms() {
         return filmService.getAllFilms();
     }
 
-    @DeleteMapping  //удаление всех фильмов
+    @DeleteMapping("/films")  //удаление всех фильмов
     public void clearFilmMap() {
         filmService.clearFilmMap();
     }
 
-    @GetMapping("/{id}")  //получение фильма по id
+    @GetMapping("/films/{id}")  //получение фильма по id
     public Film getFilmById(@PathVariable long id) {
         return filmService.getFilmById(id);
     }
 
-    @PutMapping("/{id}/like/{userId}")  //добавление лайка
+    @PutMapping("/films/{id}/like/{userId}")  //добавление лайка
     public Film addLike(@PathVariable("id") long filmId, @PathVariable long userId) {
         return filmService.addLike(filmId, userId);
     }
 
-    @DeleteMapping("/{id}/like/{userId}")  //удаление лайка
+    @DeleteMapping("/films/{id}/like/{userId}")  //удаление лайка
     public Film deleteLike(@PathVariable("id") long filmId, @PathVariable long userId) {
         return filmService.deleteLike(filmId, userId);
     }
 
-    @GetMapping("/popular")  //вывод определённого колличества фильмов из рейтинга
+    @GetMapping("/films/popular")  //вывод определённого колличества фильмов из рейтинга
     public List<Film> getRatingOfFilms(@RequestParam(value = "count",
             defaultValue = "10", required = false) Long count) throws ValidationException {
         return filmService.getRatingOfFilms(count);
+    }
+
+    @GetMapping("/mpa")  //вывод всех рейтингов mpa
+    public List<RatingMPA> getAllRatingMPA() {
+        return filmService.getAllRatingMPA();
+    }
+
+    @GetMapping("/mpa/{id}")  //получение рейтинга mpa по id
+    public RatingMPA getRatingMPAById(@PathVariable Integer id) {
+        return filmService.getRatingMPAById(id);
+    }
+
+    @GetMapping("/genres")  //вывод всех жанров
+    public List<Genre> getAllGenre() {
+        return filmService.getAllGenre();
+    }
+
+    @GetMapping("/genres/{id}")  //получение жанра по id
+    public Genre getGenreById(@PathVariable Integer id) {
+        return filmService.getGenreById(id);
     }
 }

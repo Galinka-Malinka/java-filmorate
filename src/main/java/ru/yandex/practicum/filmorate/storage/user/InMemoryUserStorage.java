@@ -1,12 +1,13 @@
 package ru.yandex.practicum.filmorate.storage.user;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Primary;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import ru.yandex.practicum.filmorate.exception.UserNotFoundException;
-import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
+import ru.yandex.practicum.filmorate.model.User;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -15,13 +16,14 @@ import java.util.Map;
 
 @Slf4j
 @Component
+@Primary
 public class InMemoryUserStorage implements UserStorage {
 
     private final Map<Long, User> userMap = new HashMap<>();
     private int id = 0;
 
     @Override
-    public ResponseEntity<?> addUser(User user) throws ValidationException {  //добавление пользователя
+    public ResponseEntity<User> addUser(User user) throws ValidationException {  //добавление пользователя
         if (user.getLogin().contains(" ")) {
             throw new ValidationException("В логине не должно быть пробелов");
         }
@@ -36,7 +38,7 @@ public class InMemoryUserStorage implements UserStorage {
     }
 
     @Override
-    public ResponseEntity<?> updateUser(User user) throws ValidationException {  //обновление пользователя
+    public ResponseEntity<User> updateUser(User user) throws ValidationException {  //обновление пользователя
         if (user.getLogin().contains(" ")) {
             throw new ValidationException("В логине не должно быть пробелов");
         }
@@ -72,16 +74,15 @@ public class InMemoryUserStorage implements UserStorage {
     }
 
     @Override
-    public User addFriend(long user1Id, long user2Id) { //добавление в друзья
-        if (!userMap.containsKey(user1Id)) {
+    public User addFriend(Long userId, Long friendId) { //добавление в друзья
+        if (!userMap.containsKey(userId)) {
             throw new UserNotFoundException("Пользователя с id = " + id + " не существует");
         }
-        if (!userMap.containsKey(user2Id)) {
+        if (!userMap.containsKey(friendId)) {
             throw new UserNotFoundException("Пользователя с id = " + id + " не существует");
         }
-        userMap.get(user1Id).addFriend(userMap.get(user2Id));
-        userMap.get(user2Id).addFriend(userMap.get(user1Id));
-        return userMap.get(user1Id);
+        userMap.get(userId).addFriend(userMap.get(friendId));
+        return userMap.get(userId);
     }
 
     @Override
@@ -114,15 +115,15 @@ public class InMemoryUserStorage implements UserStorage {
     }
 
     @Override
-    public ResponseEntity<?> deleteFriend(Long user1Id, Long user2Id) {  //удаление друга
-        if (!userMap.containsKey(user1Id)) {
+    public ResponseEntity<User> deleteFriend(Long userId, Long friendId) {  //удаление друга
+        if (!userMap.containsKey(userId)) {
             throw new UserNotFoundException("Пользователя с id = " + id + " не существует");
         }
-        if (!userMap.containsKey(user2Id)) {
+        if (!userMap.containsKey(friendId)) {
             throw new UserNotFoundException("Пользователя с id = " + id + " не существует");
         }
-        userMap.get(user1Id).deleteFriend(userMap.get(user2Id));
-        userMap.get(user2Id).deleteFriend(userMap.get(user1Id));
-        return new ResponseEntity<>(userMap.get(user1Id), HttpStatus.OK);
+        userMap.get(userId).deleteFriend(userMap.get(friendId));
+        userMap.get(friendId).deleteFriend(userMap.get(userId));
+        return new ResponseEntity<>(userMap.get(userId), HttpStatus.OK);
     }
 }
