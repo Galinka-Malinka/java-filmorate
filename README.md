@@ -1,4 +1,5 @@
 # java-filmorate
+
 ## База данных
 ### Схема
 ![Схема БД](https://github.com/Galinka-Malinka/java-filmorate/blob/Datebase/filmorateBD7.svg)
@@ -178,5 +179,4 @@ WHERE film_id IN (SELECT film_id
                   ORDER BY COUNT(user_id) DESC
                   LIMIT 10);
 ```
-                  
-
+                
